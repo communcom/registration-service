@@ -48,7 +48,7 @@ class Registration extends Basic {
 
         setImmediate(() => {
             this._sendSmsCode(phone).catch(error => {
-                Logger.error(`Send sms code error - ${error}`);
+                Logger.error('Send sms code error', error);
             });
         });
 
