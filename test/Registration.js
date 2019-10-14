@@ -167,7 +167,7 @@ describe('Registration', () => {
                         },
                     ],
                 })
-                .resolves({ state: 'registered', registered: true });
+                .resolves({ state: 'registered', isRegistered: true });
 
             try {
                 await registration.firstStep({ phone: '+380000000000' });
@@ -430,7 +430,7 @@ describe('Registration', () => {
                 .withExactArgs(
                     { phone: '+380000000000' },
                     {
-                        registered: true,
+                        isRegistered: true,
                         phone: '+38********00',
                         phoneHash:
                             '0aa8201d9c960b80a7a452b16b012b06df8c35ce4ed8905e0e78ac2c101ed992',

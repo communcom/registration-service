@@ -18,7 +18,7 @@ module.exports =
                 type: String,
                 default: 'firstStep',
             },
-            registered: {
+            isRegistered: {
                 type: Boolean,
                 default: false,
             },

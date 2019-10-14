@@ -37,7 +37,7 @@ class Registration extends Basic {
     async firstStep({ phone }) {
         const userModel = await this._getUserModel(phone);
         if (userModel) {
-            this.throwIfRegistred(userModel.registered);
+            this.throwIfRegistred(userModel.isRegistered);
             this.throwIfInvalidState(userModel.state, States.FIRST_STEP);
         }
 
@@ -62,7 +62,7 @@ class Registration extends Basic {
             return { currentState: States.FIRST_STEP };
         }
 
-        this.throwIfRegistred(userModel.registered);
+        this.throwIfRegistred(userModel.isRegistered);
         this.throwIfInvalidState(userModel.state, States.VERIFY);
 
         if (userModel.smsCode !== String(code)) {
@@ -81,7 +81,7 @@ class Registration extends Basic {
             return { currentState: States.FIRST_STEP };
         }
 
-        this.throwIfRegistred(userModel.registered);
+        this.throwIfRegistred(userModel.isRegistered);
         this.throwIfInvalidState(userModel.state, States.SET_USERNAME);
         await this.blockchain.throwIfUsernameAlreadyTaken(username);
 
@@ -97,7 +97,7 @@ class Registration extends Basic {
             return { currentState: States.FIRST_STEP };
         }
 
-        this.throwIfRegistred(userModel.registered);
+        this.throwIfRegistred(userModel.isRegistered);
         this.throwIfInvalidState(userModel.state, States.TO_BLOCK_CHAIN);
 
         try {
@@ -112,7 +112,7 @@ class Registration extends Basic {
             await User.updateOne(
                 { phone },
                 {
-                    registered: true,
+                    isRegistered: true,
                     phone: PhoneUtils.maskBody(phone),
                     phoneHash: PhoneUtils.saltedHash(phone),
                     userId,
@@ -164,8 +164,8 @@ class Registration extends Basic {
         }
     }
 
-    throwIfRegistred(registered) {
-        if (registered) {
+    throwIfRegistred(isRegistered) {
+        if (isRegistered) {
             throw { code: 409, message: 'Account already registered' };
         }
     }
