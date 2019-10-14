@@ -1,4 +1,5 @@
-const hash = require('golos-js/lib/auth/ecc').hash;
+const random = require('random');
+const hash = require('eosjs-ecc/lib/hash');
 
 const STATIC_SALT = 'COMMUN';
 
@@ -25,6 +26,14 @@ class Phone {
         segments[1] = segments[1].replace(/./g, '*');
 
         return segments.join('');
+    }
+
+    static normalizePhone(phone) {
+        return phone.startsWith('+') ? phone : `+${phone}`;
+    }
+
+    static makeSmsCode() {
+        return random.int(1000, 9999);
     }
 }
 
