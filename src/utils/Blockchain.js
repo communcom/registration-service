@@ -70,7 +70,7 @@ class Blockchain {
                     authorization: [
                         {
                             actor: env.GLS_DOMAIN_CREATOR_ACCOUNT,
-                            permission: 'createuser',
+                            permission: env.GLS_DOMAIN_CREATOR_PERMISSION,
                         },
                     ],
                     data: {
