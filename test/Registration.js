@@ -2,6 +2,8 @@ const sinon = require('sinon');
 require('chai').should();
 const { assert } = require('chai');
 
+const ecc = require('eosjs-ecc');
+
 const Registration = require('../src/controllers/Registration');
 const User = require('../src/models/User');
 
@@ -14,6 +16,10 @@ describe('Registration', () => {
 
     beforeEach(() => {
         sandbox = sinon.createSandbox();
+
+        // for JsSignatureProvider
+        sandbox.stub(ecc.PrivateKey, 'fromString').returns({ toPublic: () => 'abc' });
+
         registration = new Registration({ connector: {} });
 
         date = Date;
@@ -179,8 +185,36 @@ describe('Registration', () => {
             }
         });
 
+        it('throws if recaptcha check failed', async () => {
+            sandbox
+                .stub(registration, '_checkReCaptcha')
+                .throws({ message: 'Recaptcha check failed' });
+
+            sandbox
+                .mock(User)
+                .expects('findOne')
+                .withExactArgs({
+                    $or: [
+                        { phone: '+380000000000' },
+                        {
+                            phoneHash:
+                                '0aa8201d9c960b80a7a452b16b012b06df8c35ce4ed8905e0e78ac2c101ed992',
+                        },
+                    ],
+                });
+
+            try {
+                await registration.firstStep({ phone: '+380000000000', captcha: 'qwerty' });
+            } catch (err) {
+                (() => {
+                    throw err;
+                }).should.throw(/Recaptcha check failed/);
+            }
+        });
+
         it('new phone', async () => {
             sandbox.stub(registration, 'callService');
+            sandbox.stub(registration, '_checkReCaptcha').resolves();
 
             sandbox
                 .mock(User)
@@ -219,7 +253,56 @@ describe('Registration', () => {
                 .expects('makeSmsCode')
                 .returns(1234);
 
-            const result = await registration.firstStep({ phone: '+380000000000' });
+            const result = await registration.firstStep({
+                phone: '+380000000000',
+                captcha: 'qwerty',
+            });
+
+            result.should.have.property('currentState', 'verify');
+            result.should.have.property('nextSmsRetry');
+        });
+
+        it('new phone with skiped sms send', async () => {
+            sandbox.stub(registration, 'callService');
+            sandbox.stub(registration, '_checkReCaptcha').resolves();
+            sandbox.stub(registration, 'isSmsSendCodeSkiped').resolves(true);
+
+            sandbox
+                .mock(User)
+                .expects('findOne')
+                .withExactArgs({
+                    $or: [
+                        { phone: '+380000000000' },
+                        {
+                            phoneHash:
+                                '0aa8201d9c960b80a7a452b16b012b06df8c35ce4ed8905e0e78ac2c101ed992',
+                        },
+                    ],
+                });
+
+            sandbox
+                .mock(User)
+                .expects('create')
+                .withExactArgs({
+                    phone: '+380000000000',
+                    state: 'verify',
+                });
+
+            sandbox
+                .mock(User)
+                .expects('updateOne')
+                .withExactArgs(
+                    { phone: '+380000000000' },
+                    {
+                        smsCode: 1234,
+                        smsCodeDate: new Date(), // important
+                    }
+                );
+
+            const result = await registration.firstStep({
+                phone: '+380000000000',
+                captcha: 'qwerty',
+            });
 
             result.should.have.property('currentState', 'verify');
             result.should.have.property('nextSmsRetry');
@@ -344,6 +427,8 @@ describe('Registration', () => {
         it('sets username', async () => {
             sandbox.stub(registration.blockchain, 'throwIfUsernameAlreadyTaken').resolves();
 
+            sandbox.stub(registration.blockchain, 'generateNewUserId').resolves('tst5ywpbdkfd');
+
             sandbox
                 .mock(User)
                 .expects('findOne')
@@ -367,6 +452,7 @@ describe('Registration', () => {
                 .withExactArgs(
                     { phone: '+380000000000' },
                     {
+                        userId: 'tst5ywpbdkfd',
                         username: 'neo',
                         state: 'toBlockChain',
                     }
@@ -376,7 +462,7 @@ describe('Registration', () => {
                 phone: '+380000000000',
                 username: 'neo',
             });
-            assert.deepEqual(result, { currentState: 'toBlockChain' });
+            assert.deepEqual(result, { userId: 'tst5ywpbdkfd', currentState: 'toBlockChain' });
         });
     });
 
@@ -405,7 +491,7 @@ describe('Registration', () => {
         it('register in blockchain', async () => {
             sandbox
                 .stub(registration.blockchain, 'registerInBlockChain')
-                .resolves({ userId: 'zzzz' });
+                .resolves({ userId: 'tst5ywpbdkfd' });
 
             sandbox
                 .mock(User)
@@ -434,7 +520,7 @@ describe('Registration', () => {
                         phone: '+38********00',
                         phoneHash:
                             '0aa8201d9c960b80a7a452b16b012b06df8c35ce4ed8905e0e78ac2c101ed992',
-                        userId: 'zzzz',
+                        userId: 'tst5ywpbdkfd',
                         username: 'neo',
                         state: 'registered',
                     }
@@ -443,12 +529,13 @@ describe('Registration', () => {
             const result = await registration.toBlockChain({
                 phone: '+380000000000',
                 username: 'neo',
+                userId: 'tst5ywpbdkfd',
                 publicOwnerKey: '1234',
                 publicActiveKey: '1234',
             });
 
             assert.deepEqual(result, {
-                userId: 'zzzz',
+                userId: 'tst5ywpbdkfd',
                 username: 'neo',
                 currentState: 'registered',
             });

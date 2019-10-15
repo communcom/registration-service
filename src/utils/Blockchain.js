@@ -21,11 +21,9 @@ class Blockchain {
         });
     }
 
-    async registerInBlockChain(userName, publicOwnerKey, publicActiveKey) {
-        const newUserId = await this._generateNewUserId();
-
+    async registerInBlockChain(userId, userName, publicOwnerKey, publicActiveKey) {
         const transaction = this._generateRegisterTransaction(
-            newUserId,
+            userId,
             userName,
             publicOwnerKey,
             publicActiveKey
@@ -42,7 +40,7 @@ class Blockchain {
         const result = await this.api.pushSignedTransaction(trx);
 
         return {
-            userId: newUserId,
+            userId,
             transactionId: result.transaction_id,
         };
     }
@@ -89,7 +87,7 @@ class Blockchain {
         return { threshold: 1, keys: [{ key, weight: 1 }], accounts: [], waits: [] };
     }
 
-    async _generateNewUserId() {
+    async generateNewUserId() {
         const prefix = env.GLS_ACCOUNT_NAME_PREFIX;
 
         const newUserId =
@@ -102,8 +100,13 @@ class Blockchain {
 
         try {
             await this.throwIfUserIdAlreadyExists(newUserId);
-        } catch (err) {
-            return await this._generateNewUserId();
+        } catch (error) {
+            if (error.code === 1105) {
+                return await this.generateNewUserId();
+            }
+
+            // Blockchain error
+            throw error;
         }
 
         return newUserId;
@@ -132,7 +135,7 @@ class Blockchain {
     async throwIfUsernameAlreadyTaken(username) {
         try {
             await this.rpc.fetch('/v1/chain/resolve_names', [`${username}@commun`]);
-            throw { code: 1105, message: `This username is already taken` };
+            throw { code: 1106, message: `This username is already taken` };
         } catch (error) {
             const errObject = error.json || error;
 

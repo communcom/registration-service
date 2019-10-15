@@ -6,8 +6,7 @@ const Logger = core.utils.Logger;
 
 const env = require('../data/env');
 
-// TODO
-async function checkCaptha(captcha) {
+async function checkCaptcha(captcha) {
     const rawResult = await request({
         method: 'POST',
         uri: 'https://www.google.com/recaptcha/api/siteverify',
@@ -18,20 +17,19 @@ async function checkCaptha(captcha) {
     });
 
     let result;
-
     try {
         result = JSON.parse(rawResult);
     } catch (err) {
         Logger.error('Google invalid response');
         metrics.inc('google_invalid_response');
-        throw { code: 122, message: 'Captha error' };
+        throw err;
     }
-
+    
     if (!result.success) {
-        throw { code: 123, message: 'Captha error' };
+        throw { code: 410, message: 'Recaptcha check failed' };
     }
 }
 
 module.exports = {
-    checkCaptha,
+    checkCaptcha,
 };
