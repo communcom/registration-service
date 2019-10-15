@@ -64,7 +64,7 @@ toBlockChain:             // Последний шаг регистрации, �
 ```json
 {
     "id": 1,
-    "method": "getState",
+    "method": "firstStep",
     "jsonrpc": "2.0",
     "params": {
         "phone": "+380000000000",
@@ -100,7 +100,7 @@ toBlockChain:             // Последний шаг регистрации, �
 ```json
 {
     "id": 1,
-    "method": "getState",
+    "method": "verify",
     "jsonrpc": "2.0",
     "params": {
         "phone": "+380000000000",
@@ -135,7 +135,7 @@ toBlockChain:             // Последний шаг регистрации, �
 ```json
 {
     "id": 1,
-    "method": "getState",
+    "method": "setUsername",
     "jsonrpc": "2.0",
     "params": {
         "phone": "+380000000000",
@@ -171,7 +171,7 @@ toBlockChain:             // Последний шаг регистрации, �
 ```json
 {
     "id": 1,
-    "method": "getState",
+    "method": "toBlockChain",
     "jsonrpc": "2.0",
     "params": {
         "phone": "+380000000000",
