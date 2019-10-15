@@ -7,6 +7,7 @@ const States = require('../data/states');
 
 const PhoneUtils = require('../utils/Phone');
 const Blockchain = require('../utils/Blockchain');
+const { checkCaptcha } = require('../utils/captcha');
 
 const User = require('../models/User');
 
@@ -34,11 +35,15 @@ class Registration extends Basic {
         return { currentState: userModel.state };
     }
 
-    async firstStep({ phone }) {
+    async firstStep({ phone, captcha }) {
         const userModel = await this._getUserModel(phone);
         if (userModel) {
             this.throwIfRegistred(userModel.isRegistered);
             this.throwIfInvalidState(userModel.state, States.FIRST_STEP);
+        }
+
+        if (this._isReCaptchaEnabled()) {
+            await this._checkReCaptcha(captcha);
         }
 
         await User.create({
@@ -85,12 +90,14 @@ class Registration extends Basic {
         this.throwIfInvalidState(userModel.state, States.SET_USERNAME);
         await this.blockchain.throwIfUsernameAlreadyTaken(username);
 
-        await User.updateOne({ phone }, { username, state: States.TO_BLOCK_CHAIN });
+        const userId = await this.blockchain.generateNewUserId();
 
-        return { currentState: States.TO_BLOCK_CHAIN };
+        await User.updateOne({ phone }, { userId, username, state: States.TO_BLOCK_CHAIN });
+
+        return { userId, currentState: States.TO_BLOCK_CHAIN };
     }
 
-    async toBlockChain({ phone, username, publicOwnerKey, publicActiveKey }) {
+    async toBlockChain({ phone, userId, username, publicOwnerKey, publicActiveKey }) {
         const userModel = await this._getUserModel(phone);
 
         if (!userModel) {
@@ -101,7 +108,8 @@ class Registration extends Basic {
         this.throwIfInvalidState(userModel.state, States.TO_BLOCK_CHAIN);
 
         try {
-            const { userId, transactionId } = await this.blockchain.registerInBlockChain(
+            const { transactionId } = await this.blockchain.registerInBlockChain(
+                userId,
                 username,
                 publicOwnerKey,
                 publicActiveKey
@@ -127,7 +135,8 @@ class Registration extends Basic {
                 currentState: States.REGISTERED,
             };
         } catch (err) {
-            Logger.warn(err);
+            Logger.error(err);
+            throw { code: 500, message: 'Internal Service Error' };
         }
     }
 
@@ -140,8 +149,20 @@ class Registration extends Basic {
     }
 
     async _sendSmsCode(phone) {
+        if (this.isSmsSendCodeSkiped()) {
+            await User.updateOne(
+                { phone },
+                {
+                    smsCode: 1234, // test verification code
+                    smsCodeDate: new Date(),
+                }
+            );
+
+            return;
+        }
+
         const code = PhoneUtils.makeSmsCode();
-        const message = `Your Commun verification code is ${code}`;
+        const message = `Your Commun verification code is: ${code}`;
 
         await User.updateOne(
             { phone },
@@ -151,7 +172,7 @@ class Registration extends Basic {
             }
         );
 
-        await this.callService('sms', 'plainSms', { phone, message, langl: 'en' });
+        await this.callService('sms', 'plainSms', { phone, message });
     }
 
     async _checkUsername(username) {
@@ -168,6 +189,18 @@ class Registration extends Basic {
         if (isRegistered) {
             throw { code: 409, message: 'Account already registered' };
         }
+    }
+
+    _isReCaptchaEnabled() {
+        return env.GLS_CAPTCHA_ON;
+    }
+
+    async _checkReCaptcha(captcha) {
+        await checkCaptcha(captcha);
+    }
+
+    isSmsSendCodeSkiped() {
+        return env.SKIP_SMS_VERIFICATION_CODE_SEND;
     }
 }
 

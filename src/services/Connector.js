@@ -45,7 +45,7 @@ class Connector extends BasicConnector {
                         },
                     ],
                     validation: {
-                        required: ['phone'],
+                        required: ['phone', 'captcha'],
                         properties: {
                             phone: {
                                 type: 'string',
@@ -132,39 +132,10 @@ class Connector extends BasicConnector {
             },
             requiredClients: {
                 facade: env.GLS_FACADE_CONNECT,
-                mail: env.GLS_MAIL_CONNECT,
                 sms: env.GLS_SMS_CONNECT,
                 prism: env.GLS_PRISM_CONNECT,
             },
         });
-    }
-
-    async _deleteAccount({ targetUser, targetPhone, testingPass = null }) {
-        if (!this._isTestingSystem(testingPass)) {
-            throw { code: 403, message: 'Access denied' };
-        }
-
-        if (targetUser) {
-            await User.deleteOne({ user: targetUser, isTestingSystem: true });
-        }
-
-        if (targetPhone) {
-            const findPhone = { phone: targetPhone };
-
-            if (targetPhone !== '+70000000001') {
-                findPhone.isTestingSystem = true;
-            }
-
-            await User.deleteOne(findPhone);
-
-            const phoneHash = PhoneUtil.saltedHash(targetPhone);
-            const findHash = { phoneHash };
-
-            if (targetPhone !== '+70000000001') {
-                findHash.isTestingSystem = true;
-            }
-            await User.deleteOne(findHash);
-        }
     }
 
     enableRegistration() {
@@ -200,15 +171,6 @@ class Connector extends BasicConnector {
     async _isRegistrationEnabledByApi() {
         return { enabled: this.isRegistrationEnabled() };
     }
-
-    _isTestingSystem(testingPass) {
-        if (!testingPass || !env.GLS_TESTING_PASS) {
-            return false;
-        }
-
-        return testingPass === env.GLS_TESTING_PASS;
-    }
- 
 }
 
 module.exports = Connector;

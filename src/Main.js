@@ -2,7 +2,9 @@ const core = require('cyberway-core-service');
 const BasicMain = core.services.BasicMain;
 const MongoDB = core.services.MongoDB;
 const Logger = core.utils.Logger;
+
 const env = require('./data/env');
+
 const Connector = require('./services/Connector');
 
 class Main extends BasicMain {
@@ -13,7 +15,6 @@ class Main extends BasicMain {
         this._mongoDb = new MongoDB();
 
         this.addNested(connector);
-        this.defineMeta({ name: 'registration' });
     }
 
     async start() {
