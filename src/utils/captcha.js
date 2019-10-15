@@ -26,7 +26,7 @@ async function checkCaptcha(captcha) {
     }
     
     if (!result.success) {
-        throw { code: 410, message: 'Recaptcha check failed' };
+        throw { code: 1103, message: 'Recaptcha check failed' };
     }
 }
 
