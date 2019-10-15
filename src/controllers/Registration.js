@@ -71,7 +71,7 @@ class Registration extends Basic {
         this.throwIfInvalidState(userModel.state, States.VERIFY);
 
         if (userModel.smsCode !== String(code)) {
-            throw { code: 409, message: 'Wrong activation code' };
+            throw { code: 1104, message: 'Wrong activation code' };
         }
 
         await User.updateOne({ phone }, { isPhoneVerified: true, state: States.SET_USERNAME });
@@ -181,13 +181,13 @@ class Registration extends Basic {
 
     throwIfInvalidState(userState, state) {
         if (userState !== state) {
-            throw { code: 400, message: 'Invalid step taken', currentState: userState };
+            throw { code: 1102, message: 'Invalid step taken', currentState: userState };
         }
     }
 
     throwIfRegistred(isRegistered) {
         if (isRegistered) {
-            throw { code: 409, message: 'Account already registered' };
+            throw { code: 1101, message: 'Account already registered' };
         }
     }
 
