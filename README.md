@@ -128,6 +128,42 @@ toBlockChain:             // Последний шаг регистрации, �
 | 1102 | Invalid step taken | Неверный шаг регистрации |
 | 1104 | Wrong activation code | Неверный код верификации |
 
+### resendSmsCode
+
+=> Запрос
+
+```json
+{
+    "id": 1,
+    "method": "resendSmsCode",
+    "jsonrpc": "2.0",
+    "params": {
+        "phone": "+380000000000"
+    }
+}
+```
+
+<= Ответ
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "nextSmsRetry": "2019-10-15T07:57:43.879Z",
+        "currentState": "verify"
+    }
+}
+```
+Ошибки
+
+| Code | Message | Описание |
+| --- | --- | --- |
+| 1101 | Account already registered | Аккаунт зарегестрирован |
+| 1102 | Invalid step taken | Неверный шаг регистрации |
+| 1107 | Try later | Try later |
+| 1108 | Too many retries | Too many retries |
+
 ### setUsername
 
 => Запрос

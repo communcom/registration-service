@@ -129,6 +129,24 @@ class Connector extends BasicConnector {
                         additionalProperties: true,
                     },
                 },
+                resendSmsCode: {
+                    handler: this._registration.resendSmsCode,
+                    scope: this._registration,
+                    before: [
+                        {
+                            handler: this._checkEnable,
+                            scope: this,
+                        },
+                    ],
+                    validation: {
+                        required: ['phone'],
+                        properties: {
+                            phone: {
+                                type: 'string',
+                            },
+                        },
+                    },
+                },
             },
             requiredClients: {
                 facade: env.GLS_FACADE_CONNECT,
