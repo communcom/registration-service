@@ -46,16 +46,19 @@ class Registration extends Basic {
             await this._checkReCaptcha(captcha);
         }
 
-        await User.create({
-            phone,
-            state: States.VERIFY,
-        });
+        try {
+            const { code } = await this._sendSmsCode(phone);
 
-        setImmediate(() => {
-            this._sendSmsCode(phone).catch(error => {
-                Logger.error('Send sms code error', error);
+            await User.create({
+                phone,
+                smsCode: code,
+                smsCodeDate: new Date(),
+                state: States.VERIFY,
             });
-        });
+        } catch (err) {
+            Logger.error('Send sms error:', phone, err);
+            throw err;
+        }
 
         return { nextSmsRetry: this._calcNextSmsRetry(), currentState: States.VERIFY };
     }
@@ -140,9 +143,56 @@ class Registration extends Basic {
         }
     }
 
+    async resendSmsCode({ phone }) {
+        const userModel = await this._getUserModel(phone);
+
+        if (!userModel) {
+            return { currentState: States.FIRST_STEP };
+        }
+
+        this.throwIfRegistred(userModel.isRegistered);
+        this.throwIfInvalidState(userModel.state, States.VERIFY);
+
+        if (
+            Date.now() - new Date(userModel.smsCodeDate).getTime() <
+            env.GLS_SMS_RESEND_CODE_TIMEOUT
+        ) {
+            throw {
+                code: 1107,
+                message: 'Try later',
+                nextSmsRetry: userModel.smsCodeDate,
+            };
+        }
+
+        if (userModel.smsCodeResendCount >= env.GLS_SMS_RESEND_CODE_MAX) {
+            throw { code: 1108, message: 'Too many retries' };
+        }
+
+        try {
+            const { code } = await this._sendSmsCode(phone);
+
+            await User.updateOne(
+                { phone },
+                {
+                    smsCodeResendCount: userModel.smsCodeResendCount + 1,
+                    smsCode: code,
+                    smsCodeDate: new Date(),
+                }
+            );
+        } catch (err) {
+            Logger.error('Send sms error:', phone, err);
+            throw err;
+        }
+
+        return {
+            nextSmsRetry: this._calcNextSmsRetry(userModel.smsCodeDate),
+            currentState: States.VERIFY,
+        };
+    }
+
     _calcNextSmsRetry(smsCodeDate) {
         if (smsCodeDate) {
-            return new Date(Number(smsCodeDate) + env.GLS_SMS_RESEND_CODE_TIMEOUT);
+            return new Date(new Date(smsCodeDate).getTime() + env.GLS_SMS_RESEND_CODE_TIMEOUT);
         } else {
             return new Date(Date.now() + env.GLS_SMS_RESEND_CODE_TIMEOUT);
         }
@@ -150,29 +200,15 @@ class Registration extends Basic {
 
     async _sendSmsCode(phone) {
         if (this.isSmsSendCodeSkiped()) {
-            await User.updateOne(
-                { phone },
-                {
-                    smsCode: 1234, // test verification code
-                    smsCodeDate: new Date(),
-                }
-            );
-
-            return;
+            return 1234; // test verification code
         }
 
         const code = PhoneUtils.makeSmsCode();
         const message = `Your Commun verification code is: ${code}`;
 
-        await User.updateOne(
-            { phone },
-            {
-                smsCode: code,
-                smsCodeDate: new Date(),
-            }
-        );
-
         await this.callService('sms', 'plainSms', { phone, message });
+
+        return { code };
     }
 
     async _checkUsername(username) {

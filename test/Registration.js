@@ -7,8 +7,6 @@ const ecc = require('eosjs-ecc');
 const Registration = require('../src/controllers/Registration');
 const User = require('../src/models/User');
 
-const PhoneUtils = require('../src/utils/Phone');
-
 describe('Registration', () => {
     let sandbox;
     let date;
@@ -30,6 +28,10 @@ describe('Registration', () => {
                 }
 
                 return new Date('2019-10-10');
+            }
+
+            static now() {
+                return 1570741199000;
             }
         };
     });
@@ -212,8 +214,47 @@ describe('Registration', () => {
             }
         });
 
+        it('throws if sms fails to send', async () => {
+            sandbox.stub(registration, '_checkReCaptcha').resolves();
+            sandbox
+                .stub(registration, 'callService')
+                .throws({ message: 'This phone number is invalid' });
+
+            sandbox
+                .mock(User)
+                .expects('findOne')
+                .withExactArgs({
+                    $or: [
+                        { phone: '+380000000000' },
+                        {
+                            phoneHash:
+                                '0aa8201d9c960b80a7a452b16b012b06df8c35ce4ed8905e0e78ac2c101ed992',
+                        },
+                    ],
+                });
+
+            sandbox
+                .mock(User)
+                .expects('create')
+                .withExactArgs({
+                    phone: '+380000000000',
+                    state: 'verify',
+                    smsCode: 1234,
+                    smsCodeDate: new Date(),
+                })
+                .never();
+
+            try {
+                await registration.firstStep({ phone: '+380000000000', captcha: 'qwerty' });
+            } catch (err) {
+                (() => {
+                    throw err;
+                }).should.throw(/This phone number is invalid/);
+            }
+        });
+
         it('new phone', async () => {
-            sandbox.stub(registration, 'callService');
+            sandbox.stub(registration, '_sendSmsCode').resolves({ code: 1234 });
             sandbox.stub(registration, '_checkReCaptcha').resolves();
 
             sandbox
@@ -235,23 +276,9 @@ describe('Registration', () => {
                 .withExactArgs({
                     phone: '+380000000000',
                     state: 'verify',
+                    smsCode: 1234,
+                    smsCodeDate: new Date(), // important
                 });
-
-            sandbox
-                .mock(User)
-                .expects('updateOne')
-                .withExactArgs(
-                    { phone: '+380000000000' },
-                    {
-                        smsCode: 1234,
-                        smsCodeDate: new Date(), // important
-                    }
-                );
-
-            sandbox
-                .mock(PhoneUtils)
-                .expects('makeSmsCode')
-                .returns(1234);
 
             const result = await registration.firstStep({
                 phone: '+380000000000',
@@ -263,7 +290,7 @@ describe('Registration', () => {
         });
 
         it('new phone with skiped sms send', async () => {
-            sandbox.stub(registration, 'callService');
+            sandbox.stub(registration, '_sendSmsCode').resolves({ code: 1234 });
             sandbox.stub(registration, '_checkReCaptcha').resolves();
             sandbox.stub(registration, 'isSmsSendCodeSkiped').resolves(true);
 
@@ -286,18 +313,9 @@ describe('Registration', () => {
                 .withExactArgs({
                     phone: '+380000000000',
                     state: 'verify',
+                    smsCode: 1234,
+                    smsCodeDate: new Date(), // important
                 });
-
-            sandbox
-                .mock(User)
-                .expects('updateOne')
-                .withExactArgs(
-                    { phone: '+380000000000' },
-                    {
-                        smsCode: 1234,
-                        smsCodeDate: new Date(), // important
-                    }
-                );
 
             const result = await registration.firstStep({
                 phone: '+380000000000',
@@ -539,6 +557,92 @@ describe('Registration', () => {
                 username: 'neo',
                 currentState: 'registered',
             });
+        });
+    });
+
+    describe('resendSmsCode', () => {
+        it('throw if too many retries', async () => {
+            sandbox
+                .mock(User)
+                .expects('findOne')
+                .withExactArgs({
+                    $or: [
+                        { phone: '+380000000000' },
+                        {
+                            phoneHash:
+                                '0aa8201d9c960b80a7a452b16b012b06df8c35ce4ed8905e0e78ac2c101ed992',
+                        },
+                    ],
+                })
+                .resolves({ smsCodeResendCount: 3, state: 'verify' });
+
+            try {
+                await registration.resendSmsCode({ phone: '+380000000000' });
+                assert.fail('should not be reached');
+            } catch (err) {
+                (() => {
+                    throw err;
+                }).should.throw(/Too many retries/);
+            }
+        });
+
+        it('throw if next sms retry', async () => {
+            sandbox
+                .mock(User)
+                .expects('findOne')
+                .withExactArgs({
+                    $or: [
+                        { phone: '+380000000000' },
+                        {
+                            phoneHash:
+                                '0aa8201d9c960b80a7a452b16b012b06df8c35ce4ed8905e0e78ac2c101ed992',
+                        },
+                    ],
+                })
+                .resolves({ smsCodeDate: '2019-10-10 23:59:58', state: 'verify' });
+
+            try {
+                await registration.resendSmsCode({ phone: '+380000000000' });
+                assert.fail('should not be reached');
+            } catch (err) {
+                (() => {
+                    throw err;
+                }).should.throw(/Try later/);
+            }
+        });
+
+        it('resend sms code', async () => {
+            sandbox.stub(registration, '_sendSmsCode').resolves({ code: 1234 });
+            sandbox
+                .mock(User)
+                .expects('findOne')
+                .withExactArgs({
+                    $or: [
+                        { phone: '+380000000000' },
+                        {
+                            phoneHash:
+                                '0aa8201d9c960b80a7a452b16b012b06df8c35ce4ed8905e0e78ac2c101ed992',
+                        },
+                    ],
+                })
+                .resolves({ smsCodeDate: new Date(), smsCodeResendCount: 0, state: 'verify' });
+
+            sandbox
+                .mock(User)
+                .expects('updateOne')
+                .withExactArgs(
+                    { phone: '+380000000000' },
+                    {
+                        smsCode: 1234,
+                        smsCodeDate: new Date(), // important
+                        smsCodeResendCount: 1,
+                    }
+                );
+
+            const result = await registration.resendSmsCode({ phone: '+380000000000' });
+
+            result.should.have.property('currentState', 'verify');
+            result.should.have.property('nextSmsRetry');
         });
     });
 });
