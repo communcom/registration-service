@@ -36,32 +36,44 @@ class Registration extends Basic {
         return { currentState: userModel.state };
     }
 
-    async firstStep({ phone, captcha }) {
+    async firstStep({ phone, captcha, testingPass = null }) {
         const userModel = await this._getUserModel(phone);
         if (userModel) {
             this.throwIfRegistred(userModel.isRegistered);
             this.throwIfInvalidState(userModel.state, States.FIRST_STEP);
         }
 
-        if (this._isReCaptchaEnabled()) {
+        const isTestingSystem = this._isTestingSystem(testingPass);
+
+        if (this._isReCaptchaEnabled() && !isTestingSystem) {
             await this._checkReCaptcha(captcha);
         }
 
+        const result = {};
+
         try {
-            const { code } = await this._sendSmsCode(phone);
+            const { code } = await this._sendSmsCode(phone, isTestingSystem);
+
+            if (isTestingSystem) {
+                result.code = code;
+            }
 
             await User.create({
                 phone,
                 smsCode: code,
                 smsCodeDate: new Date(),
                 state: States.VERIFY,
+                isTestingSystem,
             });
         } catch (err) {
             Logger.error('Send sms error:', phone, err);
             throw err;
         }
 
-        return { nextSmsRetry: this._calcNextSmsRetry(), currentState: States.VERIFY };
+        result.nextSmsRetry = this._calcNextSmsRetry();
+        result.currentState = States.VERIFY;
+
+        return result;
     }
 
     async verify({ phone, code }) {
@@ -207,13 +219,17 @@ class Registration extends Basic {
         }
     }
 
-    async _sendSmsCode(phone) {
+    async _sendSmsCode(phone, isTestingSystem = false) {
         if (this.isSmsSendCodeSkiped()) {
             return { code: 1234 }; // test verification code
         }
 
         const code = PhoneUtils.makeSmsCode();
         const message = `Your Commun verification code is: ${code}`;
+
+        if (isTestingSystem) {
+            return { code };
+        }
 
         await this.callService('sms', 'plainSms', { phone, message });
 
@@ -229,6 +245,35 @@ class Registration extends Basic {
         return await this.blockchain.throwIfUsernameAlreadyTaken(username);
     }
 
+    // TODO tests
+    async deleteAccount({ targetUser, targetPhone, testingPass = null }) {
+        if (!this._isTestingSystem(testingPass)) {
+            throw { code: 403, message: 'Access denied' };
+        }
+
+        if (targetUser) {
+            await User.deleteOne({ username: targetUser, isTestingSystem: true });
+        }
+
+        if (targetPhone) {
+            const findPhone = { phone: targetPhone };
+
+            if (targetPhone !== '+70000000001') {
+                findPhone.isTestingSystem = true;
+            }
+
+            await User.deleteOne(findPhone);
+
+            const phoneHash = PhoneUtils.saltedHash(targetPhone);
+            const findHash = { phoneHash };
+
+            if (targetPhone !== '+70000000001') {
+                findHash.isTestingSystem = true;
+            }
+            await User.deleteOne(findHash);
+        }
+    }
+
     throwIfInvalidState(userState, state) {
         if (userState !== state) {
             throw { code: 1102, message: 'Invalid step taken', currentState: userState };
@@ -241,6 +286,10 @@ class Registration extends Basic {
         }
     }
 
+    _isTestingSystem(testingPass) {
+        return testingPass === env.GLS_TESTING_PASS;
+    }
+
     _isReCaptchaEnabled() {
         return env.GLS_CAPTCHA_ON;
     }
@@ -250,6 +299,7 @@ class Registration extends Basic {
     }
 
     isSmsSendCodeSkiped() {
+        console.log(env.SKIP_SMS_VERIFICATION_CODE_SEND);
         return env.SKIP_SMS_VERIFICATION_CODE_SEND;
     }
 }

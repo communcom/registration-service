@@ -278,6 +278,7 @@ describe('Registration', () => {
                     state: 'verify',
                     smsCode: 1234,
                     smsCodeDate: new Date(), // important
+                    isTestingSystem: false,
                 });
 
             const result = await registration.firstStep({
@@ -315,6 +316,7 @@ describe('Registration', () => {
                     state: 'verify',
                     smsCode: 1234,
                     smsCodeDate: new Date(), // important
+                    isTestingSystem: false,
                 });
 
             const result = await registration.firstStep({
