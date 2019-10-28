@@ -8,6 +8,7 @@ const States = require('../data/states');
 const PhoneUtils = require('../utils/Phone');
 const Blockchain = require('../utils/Blockchain');
 const { checkCaptcha } = require('../utils/captcha');
+const { validateUsername } = require('../utils/validation');
 
 const User = require('../models/User');
 
@@ -91,7 +92,8 @@ class Registration extends Basic {
 
         this.throwIfRegistred(userModel.isRegistered);
         this.throwIfInvalidState(userModel.state, States.SET_USERNAME);
-        await this.blockchain.throwIfUsernameAlreadyTaken(username);
+
+        await this._checkUsername(username);
 
         const userId = await this.blockchain.generateNewUserId();
 
@@ -110,10 +112,18 @@ class Registration extends Basic {
         this.throwIfRegistred(userModel.isRegistered);
         this.throwIfInvalidState(userModel.state, States.TO_BLOCK_CHAIN);
 
+        if (userModel.username !== username) {
+            throw { code: 1110, message: 'Username mismatch' };
+        }
+
+        if (userModel.userId !== userId) {
+            throw { code: 1111, message: 'User id mismatch' };
+        }
+
         try {
             const { transactionId } = await this.blockchain.registerInBlockChain(
-                userId,
-                username,
+                userModel.userId,
+                userModel.username,
                 publicOwnerKey,
                 publicActiveKey
             );
@@ -127,7 +137,6 @@ class Registration extends Basic {
                     phone: PhoneUtils.maskBody(phone),
                     phoneHash: PhoneUtils.saltedHash(phone),
                     userId,
-                    username,
                     state: States.REGISTERED,
                 }
             );
@@ -139,7 +148,7 @@ class Registration extends Basic {
             };
         } catch (err) {
             Logger.error(err);
-            throw { code: 500, message: 'Internal Service Error' };
+            throw { code: 500, message: 'Internal Service Error', data: { err } };
         }
     }
 
@@ -200,7 +209,7 @@ class Registration extends Basic {
 
     async _sendSmsCode(phone) {
         if (this.isSmsSendCodeSkiped()) {
-            return 1234; // test verification code
+            return { code: 1234 }; // test verification code
         }
 
         const code = PhoneUtils.makeSmsCode();
@@ -212,6 +221,11 @@ class Registration extends Basic {
     }
 
     async _checkUsername(username) {
+        const validationError = validateUsername(username);
+        if (validationError) {
+            throw { code: 1109, message: validationError };
+        }
+
         return await this.blockchain.throwIfUsernameAlreadyTaken(username);
     }
 

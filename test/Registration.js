@@ -442,6 +442,29 @@ describe('Registration', () => {
             }
         });
 
+        it('throw if username is invalid', async () => {
+            sandbox
+                .mock(User)
+                .expects('findOne')
+                .withExactArgs({
+                    $or: [
+                        { phone: '+380000000000' },
+                        {
+                            phoneHash:
+                                '0aa8201d9c960b80a7a452b16b012b06df8c35ce4ed8905e0e78ac2c101ed992',
+                        },
+                    ],
+                })
+                .resolves({ state: 'setUsername' });
+
+            try {
+                await registration.setUsername({ phone: '+380000000000', username: 'lyke' });
+                assert.fail('should not be reached');
+            } catch (err) {
+                err.should.have.property('message', 'Username should be longer');
+            }
+        });
+
         it('sets username', async () => {
             sandbox.stub(registration.blockchain, 'throwIfUsernameAlreadyTaken').resolves();
 
@@ -471,14 +494,14 @@ describe('Registration', () => {
                     { phone: '+380000000000' },
                     {
                         userId: 'tst5ywpbdkfd',
-                        username: 'neo',
+                        username: 'zoidberg',
                         state: 'toBlockChain',
                     }
                 );
 
             const result = await registration.setUsername({
                 phone: '+380000000000',
-                username: 'neo',
+                username: 'zoidberg',
             });
             assert.deepEqual(result, { userId: 'tst5ywpbdkfd', currentState: 'toBlockChain' });
         });
@@ -506,6 +529,74 @@ describe('Registration', () => {
             assert.deepEqual(result, { currentState: 'firstStep' });
         });
 
+        it('throw if username mismatch', async () => {
+            sandbox
+                .mock(User)
+                .expects('findOne')
+                .withExactArgs({
+                    $or: [
+                        { phone: '+380000000000' },
+                        {
+                            phoneHash:
+                                '0aa8201d9c960b80a7a452b16b012b06df8c35ce4ed8905e0e78ac2c101ed992',
+                        },
+                    ],
+                })
+                .resolves({
+                    phone: '+380000000000',
+                    state: 'toBlockChain',
+                    username: 'zoidberg',
+                    userId: 'tst5ywpbdkfd',
+                });
+
+            try {
+                await registration.toBlockChain({
+                    phone: '+380000000000',
+                    username: 'bender',
+                    userId: 'tst5ywpbdkfd',
+                    publicOwnerKey: '1234',
+                    publicActiveKey: '1234',
+                });
+                assert.fail('should not be reached');
+            } catch (err) {
+                err.should.have.property('message', 'Username mismatch');
+            }
+        });
+
+        it('throw if user id mismatch', async () => {
+            sandbox
+                .mock(User)
+                .expects('findOne')
+                .withExactArgs({
+                    $or: [
+                        { phone: '+380000000000' },
+                        {
+                            phoneHash:
+                                '0aa8201d9c960b80a7a452b16b012b06df8c35ce4ed8905e0e78ac2c101ed992',
+                        },
+                    ],
+                })
+                .resolves({
+                    phone: '+380000000000',
+                    state: 'toBlockChain',
+                    username: 'zoidberg',
+                    userId: 'tst5ywpbdkf1',
+                });
+
+            try {
+                await registration.toBlockChain({
+                    phone: '+380000000000',
+                    username: 'zoidberg',
+                    userId: 'tst5ywpbdkfd',
+                    publicOwnerKey: '1234',
+                    publicActiveKey: '1234',
+                });
+                assert.fail('should not be reached');
+            } catch (err) {
+                err.should.have.property('message', 'User id mismatch');
+            }
+        });
+
         it('register in blockchain', async () => {
             sandbox
                 .stub(registration.blockchain, 'registerInBlockChain')
@@ -526,6 +617,8 @@ describe('Registration', () => {
                 .resolves({
                     phone: '+380000000000',
                     state: 'toBlockChain',
+                    username: 'zoidberg',
+                    userId: 'tst5ywpbdkfd',
                 });
 
             sandbox
@@ -539,14 +632,13 @@ describe('Registration', () => {
                         phoneHash:
                             '0aa8201d9c960b80a7a452b16b012b06df8c35ce4ed8905e0e78ac2c101ed992',
                         userId: 'tst5ywpbdkfd',
-                        username: 'neo',
                         state: 'registered',
                     }
                 );
 
             const result = await registration.toBlockChain({
                 phone: '+380000000000',
-                username: 'neo',
+                username: 'zoidberg',
                 userId: 'tst5ywpbdkfd',
                 publicOwnerKey: '1234',
                 publicActiveKey: '1234',
@@ -554,7 +646,7 @@ describe('Registration', () => {
 
             assert.deepEqual(result, {
                 userId: 'tst5ywpbdkfd',
-                username: 'neo',
+                username: 'zoidberg',
                 currentState: 'registered',
             });
         });
