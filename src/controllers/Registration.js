@@ -299,7 +299,6 @@ class Registration extends Basic {
     }
 
     isSmsSendCodeSkiped() {
-        console.log(env.SKIP_SMS_VERIFICATION_CODE_SEND);
         return env.SKIP_SMS_VERIFICATION_CODE_SEND;
     }
 }
