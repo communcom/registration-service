@@ -147,6 +147,30 @@ class Connector extends BasicConnector {
                         },
                     },
                 },
+                deleteAccount: {
+                    handler: this._registration.deleteAccount,
+                    scope: this._registration,
+                    before: [
+                        {
+                            handler: this._checkEnable,
+                            scope: this,
+                        },
+                    ],
+                    validation: {
+                        required: ['testingPass'],
+                        properties: {
+                            testingPass: {
+                                type: 'string',
+                            },
+                            targetUser: {
+                                type: 'string',
+                            },
+                            targetPhone: {
+                                type: 'string',
+                            },
+                        },
+                    },
+                },
             },
             requiredClients: {
                 facade: env.GLS_FACADE_CONNECT,

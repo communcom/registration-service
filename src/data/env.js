@@ -23,6 +23,8 @@ module.exports = {
     GLS_DOMAIN_CREATOR_ACCOUNT: env.GLS_DOMAIN_CREATOR_ACCOUNT,
     GLS_DOMAIN_CREATOR_PERMISSION: env.GLS_DOMAIN_CREATOR_PERMISSION || 'createuser',
     GLS_DOMAIN_CREATOR_KEY: env.GLS_DOMAIN_CREATOR_KEY,
+
+    GLS_TESTING_PASS: env.GLS_TESTING_PASS,
 };
 
 if (module.exports.GLS_IS_REG_ENABLED_ON_START === 'true') {
@@ -31,6 +33,14 @@ if (module.exports.GLS_IS_REG_ENABLED_ON_START === 'true') {
 
 if (module.exports.GLS_IS_REG_ENABLED_ON_START === 'false') {
     module.exports.GLS_IS_REG_ENABLED_ON_START = false;
+}
+
+if (module.exports.SKIP_SMS_VERIFICATION_CODE_SEND === 'true') {
+    module.exports.SKIP_SMS_VERIFICATION_CODE_SEND = true;
+}
+
+if (module.exports.SKIP_SMS_VERIFICATION_CODE_SEND === 'false') {
+    module.exports.SKIP_SMS_VERIFICATION_CODE_SEND = false;
 }
 
 if (module.exports.GLS_CAPTCHA_ON === 'false') {
