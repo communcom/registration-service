@@ -111,10 +111,13 @@ describe('Registration', () => {
                         },
                     ],
                 })
-                .resolves({ state: 'toBlockChain' });
+                .resolves({ state: 'toBlockChain', userId: 'tst5ywpbdkfd', username: 'zoidberg' });
 
             const state = await registration.getState({ phone: '+380000000000' });
-            assert.deepEqual(state, { currentState: 'toBlockChain' });
+            assert.deepEqual(state, {
+                currentState: 'toBlockChain',
+                data: { userId: 'tst5ywpbdkfd', username: 'zoidberg' },
+            });
         });
 
         it('registered', async () => {

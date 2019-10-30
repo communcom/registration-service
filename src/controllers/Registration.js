@@ -33,6 +33,16 @@ class Registration extends Basic {
             return { currentState: States.FIRST_STEP };
         }
 
+        if (userModel.state === States.TO_BLOCK_CHAIN) {
+            return {
+                currentState: userModel.state,
+                data: {
+                    userId: userModel.userId,
+                    username: userModel.username,
+                },
+            };
+        }
+
         return { currentState: userModel.state };
     }
 
