@@ -46,7 +46,7 @@ class Registration extends Basic {
         return { currentState: userModel.state };
     }
 
-    async firstStep({ phone, captcha, testingPass = null }) {
+    async firstStep({ phone, captcha, captchaType, testingPass = null }) {
         const userModel = await this._getUserModel(phone);
         if (userModel) {
             this.throwIfRegistred(userModel.isRegistered);
@@ -56,7 +56,7 @@ class Registration extends Basic {
         const isTestingSystem = this._isTestingSystem(testingPass);
 
         if (this._isReCaptchaEnabled() && !isTestingSystem) {
-            await this._checkReCaptcha(captcha);
+            await this._checkReCaptcha(captcha, captchaType);
         }
 
         const result = {};
@@ -304,8 +304,8 @@ class Registration extends Basic {
         return env.GLS_CAPTCHA_ON;
     }
 
-    async _checkReCaptcha(captcha) {
-        await checkCaptcha(captcha);
+    async _checkReCaptcha(captcha, type) {
+        await checkCaptcha(captcha, type);
     }
 
     isSmsSendCodeSkiped() {

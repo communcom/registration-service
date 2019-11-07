@@ -53,6 +53,11 @@ class Connector extends BasicConnector {
                             captcha: {
                                 type: 'string',
                             },
+                            captchaType: {
+                                type: 'string',
+                                enum: ['web', 'android', 'ios'],
+                                default: 'web',
+                            },
                             testingPass: {
                                 type: 'string',
                             },
