@@ -6,12 +6,25 @@ const Logger = core.utils.Logger;
 
 const env = require('../data/env');
 
-async function checkCaptcha(captcha) {
+function getSecretByType(type) {
+    switch (type) {
+        case 'android':
+            return env.ANDROID_CAPTCHA_SECRET;
+        case 'ios':
+            return env.IOS_CAPTCHA_SECRET;
+
+        case 'web':
+        default:
+            return env.WEB_CAPTCHA_SECRET;
+    }
+}
+
+async function checkCaptcha(captcha, type) {
     const rawResult = await request({
         method: 'POST',
         uri: 'https://www.google.com/recaptcha/api/siteverify',
         form: {
-            secret: env.GLS_GOOGLE_CAPTCHA_SECRET,
+            secret: getSecretByType(type),
             response: captcha,
         },
     });
@@ -24,7 +37,7 @@ async function checkCaptcha(captcha) {
         metrics.inc('google_invalid_response');
         throw err;
     }
-    
+
     if (!result.success) {
         throw { code: 1103, message: 'Recaptcha check failed' };
     }
