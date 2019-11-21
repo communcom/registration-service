@@ -15,6 +15,7 @@ class Blockchain {
             signatureProvider: new JsSignatureProvider([
                 env.GLS_REGISTRATION_KEY,
                 env.GLS_DOMAIN_CREATOR_KEY,
+                env.GLS_PROVIDER_KEY,
             ]),
             textDecoder: new TextDecoder(),
             textEncoder: new TextEncoder(),
@@ -77,6 +78,20 @@ class Blockchain {
                         creator: env.GLS_DOMAIN_CREATOR_ACCOUNT,
                         name: userName,
                         owner: userId,
+                    },
+                },
+                {
+                    account: 'cyber',
+                    name: 'providebw',
+                    authorization: [
+                        {
+                            actor: 'c',
+                            permission: 'providebw',
+                        },
+                    ],
+                    data: {
+                        provider: 'c',
+                        account: 'c.com',
                     },
                 },
             ],
