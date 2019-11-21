@@ -54,7 +54,7 @@ class Blockchain {
                     authorization: [
                         {
                             actor: env.GLS_REGISTRATION_ACCOUNT,
-                            permission: 'active',
+                            permission: 'c.com',
                         },
                     ],
                     data: {
