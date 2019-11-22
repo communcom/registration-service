@@ -58,6 +58,9 @@ class Connector extends BasicConnector {
                                 enum: ['web', 'android', 'ios'],
                                 default: 'web',
                             },
+                            referralId: {
+                                type: 'string'
+                            },
                             testingPass: {
                                 type: 'string',
                             },
