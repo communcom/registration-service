@@ -179,6 +179,63 @@ class Connector extends BasicConnector {
                         },
                     },
                 },
+                onboardingCommunitySubscriptions: {
+                    handler: this._registration.onboardingCommunitySubscriptions,
+                    scope: this._registration,
+                    before: [
+                        {
+                            handler: this._checkEnable,
+                            scope: this,
+                        },
+                    ],
+                    validation: {
+                        required: ['userId'],
+                        properties: {
+                            userId: {
+                                type: 'string',
+                            },
+                            communityIds: {
+                                type: ['string'],
+                            },
+                        },
+                    },
+                },
+                onboardingDeviceSwitched: {
+                    handler: this._registration.onboardingDeviceSwitched,
+                    scope: this._registration,
+                    before: [
+                        {
+                            handler: this._checkEnable,
+                            scope: this,
+                        },
+                    ],
+                    validation: {
+                        required: ['userId'],
+                        properties: {
+                            userId: {
+                                type: 'string',
+                            },
+                        },
+                    },
+                },
+                onboardingSharedLink: {
+                    handler: this._registration.onboardingSharedLink,
+                    scope: this._registration,
+                    before: [
+                        {
+                            handler: this._checkEnable,
+                            scope: this,
+                        },
+                    ],
+                    validation: {
+                        required: ['userId'],
+                        properties: {
+                            userId: {
+                                type: 'string',
+                            },
+                        },
+                    },
+                },
             },
             requiredClients: {
                 facade: env.GLS_FACADE_CONNECT,
