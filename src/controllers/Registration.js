@@ -190,7 +190,7 @@ class Registration extends Basic {
     }
 
     async onboardingCommunitySubscriptions({ userId, communityIds }) {
-        const { onboardingCommunitySubscriptions } = await User.findOne(
+        const user = await User.findOne(
             { userId },
             {
                 onboardingCommunitySubscriptions: true,
@@ -198,7 +198,7 @@ class Registration extends Basic {
             { lean: true }
         );
 
-        if (onboardingCommunitySubscriptions && onboardingCommunitySubscriptions.length === 0) {
+        if (user && user.onboardingCommunitySubscriptions.length === 0) {
             for (let i = 0; i < COMMUNITIES_SUBSCRIPTIONS_COUNT; i++) {
                 const communityId = communityIds[i];
 
@@ -221,7 +221,7 @@ class Registration extends Basic {
     }
 
     async onboardingDeviceSwitched({ userId }) {
-        const { onboardingDeviceSwitched, onboardingCommunitySubscriptions } = await User.findOne(
+        const user = await User.findOne(
             { userId },
             {
                 onboardingDeviceSwitched: true,
@@ -229,8 +229,8 @@ class Registration extends Basic {
             { lean: true }
         );
 
-        if (onboardingDeviceSwitched === false) {
-            for (const communityId of onboardingCommunitySubscriptions) {
+        if (user && user.onboardingDeviceSwitched === false) {
+            for (const communityId of user.onboardingCommunitySubscriptions) {
                 await this.blockchain.transferCommunityTokens(
                     userId,
                     communityId,
@@ -248,7 +248,7 @@ class Registration extends Basic {
     }
 
     async onboardingSharedLink({ userId }) {
-        const { onboardingSharedLink, onboardingCommunitySubscriptions } = await User.findOne(
+        const user = await User.findOne(
             { userId },
             {
                 onboardingSharedLink: true,
@@ -257,8 +257,8 @@ class Registration extends Basic {
         );
 
         // can be undefined -> strict inequality
-        if (onboardingSharedLink === false) {
-            for (const communityId of onboardingCommunitySubscriptions) {
+        if (user && user.onboardingSharedLink === false) {
+            for (const communityId of user.onboardingCommunitySubscriptions) {
                 await this.blockchain.transferCommunityTokens(
                     userId,
                     communityId,
