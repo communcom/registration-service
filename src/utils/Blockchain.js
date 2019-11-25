@@ -46,6 +46,18 @@ class Blockchain {
         };
     }
 
+    async transferCommunityTokens(userId, communityId, amount) {
+        // TODO: transaction
+        /*
+            {
+                  "from": "tst1jmcaalsf",
+                  "to": "tst3vuieewbd",
+                  "quantity": "0.011 DESTINY",
+                  "memo": ""
+            }
+         */
+    }
+
     _generateRegisterTransaction(userId, userName, publicOwnerKey, publicActiveKey) {
         return {
             actions: [
