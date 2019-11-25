@@ -47,6 +47,11 @@ module.exports =
                 type: Number,
                 default: 0,
             },
+            referralId: String,
+            referrals: {
+                type: [String],
+                default: [],
+            },
 
             // Tests
             isTestingSystem: {

@@ -46,11 +46,15 @@ class Registration extends Basic {
         return { currentState: userModel.state };
     }
 
-    async firstStep({ phone, captcha, captchaType, testingPass = null }) {
+    async firstStep({ phone, captcha, captchaType, referralId, testingPass = null }) {
         const userModel = await this._getUserModel(phone);
         if (userModel) {
             this.throwIfRegistred(userModel.isRegistered);
             this.throwIfInvalidState(userModel.state, States.FIRST_STEP);
+        }
+
+        if (referralId) {
+            await this.checkReferredUserExists({ referralId });
         }
 
         const isTestingSystem = this._isTestingSystem(testingPass);
@@ -74,6 +78,7 @@ class Registration extends Basic {
                 smsCodeDate: new Date(),
                 state: States.VERIFY,
                 isTestingSystem,
+                referralId,
             });
         } catch (err) {
             Logger.error('Send sms error:', phone, err);
@@ -162,6 +167,13 @@ class Registration extends Basic {
                     state: States.REGISTERED,
                 }
             );
+
+            if (userModel.referralId) {
+                await User.updateOne(
+                    { userId: userModel.referralId },
+                    { $addToSet: { referrals: userId } }
+                );
+            }
 
             return {
                 userId,
@@ -294,6 +306,19 @@ class Registration extends Basic {
         if (isRegistered) {
             throw { code: 1101, message: 'Account already registered' };
         }
+    }
+
+    async checkReferredUserExists({ referralId }) {
+        const user = await User.findOne(
+            { userId: referralId },
+            { _id: false, userId: true },
+            { lean: true }
+        );
+        if (!user) {
+            throw { code: 1103, message: 'Invalid referralId' };
+        }
+
+        return true;
     }
 
     _isTestingSystem(testingPass) {
