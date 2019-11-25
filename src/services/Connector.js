@@ -59,7 +59,7 @@ class Connector extends BasicConnector {
                                 default: 'web',
                             },
                             referralId: {
-                                type: 'string'
+                                type: 'string',
                             },
                             testingPass: {
                                 type: 'string',
