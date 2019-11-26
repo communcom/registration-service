@@ -9,14 +9,16 @@ const env = require('../data/env');
 class Blockchain {
     constructor() {
         this.rpc = new JsonRpc(env.CYBERWAY_HTTP_URL, { fetch });
+        const signatureProvider = new JsSignatureProvider([
+            env.GLS_REGISTRATION_KEY,
+            env.GLS_DOMAIN_CREATOR_KEY,
+            env.GLS_PROVIDER_KEY,
+            env.GLS_POINT_SENDER_KEY,
+        ]);
 
         this.api = new Api({
             rpc: this.rpc,
-            signatureProvider: new JsSignatureProvider([
-                env.GLS_REGISTRATION_KEY,
-                env.GLS_DOMAIN_CREATOR_KEY,
-                env.GLS_PROVIDER_KEY,
-            ]),
+            signatureProvider,
             textDecoder: new TextDecoder(),
             textEncoder: new TextEncoder(),
         });
@@ -31,7 +33,6 @@ class Blockchain {
         );
 
         const trx = await this.api.transact(transaction, {
-            providebw: true,
             broadcast: false,
             blocksBehind: 5,
             expireSeconds: 3600,
@@ -46,16 +47,58 @@ class Blockchain {
         };
     }
 
-    async transferCommunityTokens(userId, communityId, amount) {
-        // TODO: transaction
-        /*
-            {
-                  "from": "tst1jmcaalsf",
-                  "to": "tst3vuieewbd",
-                  "quantity": "0.011 DESTINY",
-                  "memo": ""
-            }
-         */
+    async transferCommunityTokens({ userId, communityId, amount }) {
+        const transaction = this._generateTokenTransferTransaction({ userId, communityId, amount });
+
+        const trx = await this.api.transact(transaction, {
+            broadcast: false,
+            blocksBehind: 5,
+            expireSeconds: 3600,
+        });
+
+        const result = await this.api.pushSignedTransaction(trx);
+
+        return {
+            userId,
+            transactionId: result.transaction_id,
+        };
+    }
+
+    _generateTokenTransferTransaction({ userId, communityId, amount }) {
+        return {
+            actions: [
+                {
+                    account: 'c.point',
+                    name: 'transfer',
+                    authorization: [
+                        {
+                            actor: env.GLS_POINT_SENDER,
+                            permission: 'active',
+                        },
+                    ],
+                    data: {
+                        from: env.GLS_POINT_SENDER,
+                        to: userId,
+                        quantity: `${amount}.000 ${communityId}`,
+                        memo: '',
+                    },
+                },
+                {
+                    account: 'cyber',
+                    name: 'providebw',
+                    authorization: [
+                        {
+                            actor: 'c',
+                            permission: 'providebw',
+                        },
+                    ],
+                    data: {
+                        provider: 'c',
+                        account: env.GLS_POINT_SENDER,
+                    },
+                },
+            ],
+        };
     }
 
     _generateRegisterTransaction(userId, userName, publicOwnerKey, publicActiveKey) {

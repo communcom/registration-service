@@ -13,7 +13,7 @@ const { validateUsername } = require('../utils/validation');
 const User = require('../models/User');
 
 const COMMUNITIES_SUBSCRIPTIONS_COUNT = 3;
-const ONBOARDING_TOKENS_AMOUNT = 20;
+const ONBOARDING_TOKENS_AMOUNT = 10;
 
 class Registration extends Basic {
     constructor({ connector }) {
@@ -202,11 +202,11 @@ class Registration extends Basic {
             for (let i = 0; i < COMMUNITIES_SUBSCRIPTIONS_COUNT; i++) {
                 const communityId = communityIds[i];
 
-                await this.blockchain.transferCommunityTokens(
+                await this.blockchain.transferCommunityTokens({
                     userId,
                     communityId,
-                    ONBOARDING_TOKENS_AMOUNT
-                );
+                    amount: ONBOARDING_TOKENS_AMOUNT,
+                });
 
                 await User.update(
                     { userId },
@@ -225,17 +225,18 @@ class Registration extends Basic {
             { userId },
             {
                 onboardingDeviceSwitched: true,
+                onboardingCommunitySubscriptions: true,
             },
             { lean: true }
         );
 
         if (user && user.onboardingDeviceSwitched === false) {
             for (const communityId of user.onboardingCommunitySubscriptions) {
-                await this.blockchain.transferCommunityTokens(
+                await this.blockchain.transferCommunityTokens({
                     userId,
                     communityId,
-                    ONBOARDING_TOKENS_AMOUNT
-                );
+                    amount: ONBOARDING_TOKENS_AMOUNT,
+                });
 
                 await User.update(
                     { userId },
@@ -252,6 +253,7 @@ class Registration extends Basic {
             { userId },
             {
                 onboardingSharedLink: true,
+                onboardingCommunitySubscriptions: true,
             },
             { lean: true }
         );
@@ -259,11 +261,11 @@ class Registration extends Basic {
         // can be undefined -> strict inequality
         if (user && user.onboardingSharedLink === false) {
             for (const communityId of user.onboardingCommunitySubscriptions) {
-                await this.blockchain.transferCommunityTokens(
+                await this.blockchain.transferCommunityTokens({
                     userId,
                     communityId,
-                    ONBOARDING_TOKENS_AMOUNT
-                );
+                    amount: ONBOARDING_TOKENS_AMOUNT,
+                });
 
                 await User.update(
                     { userId },

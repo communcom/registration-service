@@ -195,7 +195,11 @@ class Connector extends BasicConnector {
                                 type: 'string',
                             },
                             communityIds: {
-                                type: ['string'],
+                                type: 'array',
+                                minItems: 3,
+                                items: {
+                                    type: 'string',
+                                },
                             },
                         },
                     },
