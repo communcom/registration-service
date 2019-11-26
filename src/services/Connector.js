@@ -59,7 +59,7 @@ class Connector extends BasicConnector {
                                 default: 'web',
                             },
                             referralId: {
-                                type: 'string'
+                                type: 'string',
                             },
                             testingPass: {
                                 type: 'string',
@@ -174,6 +174,67 @@ class Connector extends BasicConnector {
                                 type: 'string',
                             },
                             targetPhone: {
+                                type: 'string',
+                            },
+                        },
+                    },
+                },
+                onboardingCommunitySubscriptions: {
+                    handler: this._registration.onboardingCommunitySubscriptions,
+                    scope: this._registration,
+                    before: [
+                        {
+                            handler: this._checkEnable,
+                            scope: this,
+                        },
+                    ],
+                    validation: {
+                        required: ['userId'],
+                        properties: {
+                            userId: {
+                                type: 'string',
+                            },
+                            communityIds: {
+                                type: 'array',
+                                minItems: 3,
+                                items: {
+                                    type: 'string',
+                                },
+                            },
+                        },
+                    },
+                },
+                onboardingDeviceSwitched: {
+                    handler: this._registration.onboardingDeviceSwitched,
+                    scope: this._registration,
+                    before: [
+                        {
+                            handler: this._checkEnable,
+                            scope: this,
+                        },
+                    ],
+                    validation: {
+                        required: ['userId'],
+                        properties: {
+                            userId: {
+                                type: 'string',
+                            },
+                        },
+                    },
+                },
+                onboardingSharedLink: {
+                    handler: this._registration.onboardingSharedLink,
+                    scope: this._registration,
+                    before: [
+                        {
+                            handler: this._checkEnable,
+                            scope: this,
+                        },
+                    ],
+                    validation: {
+                        required: ['userId'],
+                        properties: {
+                            userId: {
                                 type: 'string',
                             },
                         },

@@ -52,6 +52,18 @@ module.exports =
                 type: [String],
                 default: [],
             },
+            onboardingCommunitySubscriptions: {
+                type: [String],
+                default: [],
+            },
+            onboardingDeviceSwitched: {
+                type: Boolean,
+                default: false,
+            },
+            onboardingSharedLink: {
+                type: Boolean,
+                default: false,
+            },
 
             // Tests
             isTestingSystem: {

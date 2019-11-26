@@ -12,6 +12,9 @@ const { validateUsername } = require('../utils/validation');
 
 const User = require('../models/User');
 
+const COMMUNITIES_SUBSCRIPTIONS_COUNT = 3;
+const ONBOARDING_TOKENS_AMOUNT = 10;
+
 class Registration extends Basic {
     constructor({ connector }) {
         super({ connector });
@@ -183,6 +186,94 @@ class Registration extends Basic {
         } catch (err) {
             Logger.error(err);
             throw { code: 500, message: 'Internal Service Error', data: { err } };
+        }
+    }
+
+    async onboardingCommunitySubscriptions({ userId, communityIds }) {
+        const user = await User.findOne(
+            { userId },
+            {
+                onboardingCommunitySubscriptions: true,
+            },
+            { lean: true }
+        );
+
+        if (user && user.onboardingCommunitySubscriptions.length === 0) {
+            for (let i = 0; i < COMMUNITIES_SUBSCRIPTIONS_COUNT; i++) {
+                const communityId = communityIds[i];
+
+                await this.blockchain.transferCommunityTokens({
+                    userId,
+                    communityId,
+                    amount: ONBOARDING_TOKENS_AMOUNT,
+                });
+
+                await User.update(
+                    { userId },
+                    {
+                        $addToSet: {
+                            onboardingCommunitySubscriptions: communityId,
+                        },
+                    }
+                );
+            }
+        }
+    }
+
+    async onboardingDeviceSwitched({ userId }) {
+        const user = await User.findOne(
+            { userId },
+            {
+                onboardingDeviceSwitched: true,
+                onboardingCommunitySubscriptions: true,
+            },
+            { lean: true }
+        );
+
+        if (user && user.onboardingDeviceSwitched === false) {
+            for (const communityId of user.onboardingCommunitySubscriptions) {
+                await this.blockchain.transferCommunityTokens({
+                    userId,
+                    communityId,
+                    amount: ONBOARDING_TOKENS_AMOUNT,
+                });
+
+                await User.update(
+                    { userId },
+                    {
+                        $set: { onboardingDeviceSwitched: true },
+                    }
+                );
+            }
+        }
+    }
+
+    async onboardingSharedLink({ userId }) {
+        const user = await User.findOne(
+            { userId },
+            {
+                onboardingSharedLink: true,
+                onboardingCommunitySubscriptions: true,
+            },
+            { lean: true }
+        );
+
+        // can be undefined -> strict inequality
+        if (user && user.onboardingSharedLink === false) {
+            for (const communityId of user.onboardingCommunitySubscriptions) {
+                await this.blockchain.transferCommunityTokens({
+                    userId,
+                    communityId,
+                    amount: ONBOARDING_TOKENS_AMOUNT,
+                });
+
+                await User.update(
+                    { userId },
+                    {
+                        $set: { onboardingSharedLink: true },
+                    }
+                );
+            }
         }
     }
 
