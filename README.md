@@ -26,6 +26,16 @@ toBlockChain:             // Последний шаг регистрации, �
     username <string>        // Имя пользователя.
     publicOwnerKey <string>  // Ключ аккаунта (главный ключ).
     publicActiveKey <string> // Ключ аккаунта (активный ключ).
+
+onboardingCommunitySubscriptions:             // Шаг процесса онбординга -- подписка на 3 сообщества.
+    userId <string>                           // User Id пользователя
+    communityIds <[string]>                   // Community Id сообществ
+
+onboardingDeviceSwitched:                     // Шаг процесса онбординга -- логин с другого устройства.
+    userId <string>                           // User Id пользователя
+
+onboardingSharedLink:                         // Шаг процесса онбординга -- логин с другого устройства.
+    userId <string>                           // User Id пользователя
 ```
 
 ## Описание API
@@ -85,13 +95,14 @@ toBlockChain:             // Последний шаг регистрации, �
     }
 }
 ```
+
 Ошибки
 
-| Code | Message | Описание |
-| --- | --- | --- |
-| 1101 | Account already registered | Аккаунт зарегестрирован |
-| 1102 | Invalid step taken | Неверный шаг регистрации |
-| 1103 | Recaptcha check failed | Ошибка проверки каптчи |
+| Code  | Message                    | Описание                 |
+| ----- | -------------------------- | ------------------------ |
+| 1101  | Account already registered | Аккаунт зарегестрирован  |
+| 1102  | Invalid step taken         | Неверный шаг регистрации |
+| 1103  | Recaptcha check failed     | Ошибка проверки каптчи   |
 
 ### verify
 
@@ -120,13 +131,14 @@ toBlockChain:             // Последний шаг регистрации, �
     }
 }
 ```
+
 Ошибки
 
-| Code | Message | Описание |
-| --- | --- | --- |
-| 1101 | Account already registered | Аккаунт зарегестрирован |
-| 1102 | Invalid step taken | Неверный шаг регистрации |
-| 1104 | Wrong activation code | Неверный код верификации |
+| Code  | Message                    | Описание                 |
+| ----- | -------------------------- | ------------------------ |
+| 1101  | Account already registered | Аккаунт зарегестрирован  |
+| 1102  | Invalid step taken         | Неверный шаг регистрации |
+| 1104  | Wrong activation code      | Неверный код верификации |
 
 ### resendSmsCode
 
@@ -155,14 +167,15 @@ toBlockChain:             // Последний шаг регистрации, �
     }
 }
 ```
+
 Ошибки
 
-| Code | Message | Описание |
-| --- | --- | --- |
-| 1101 | Account already registered | Аккаунт зарегестрирован |
-| 1102 | Invalid step taken | Неверный шаг регистрации |
-| 1107 | Try later | Try later |
-| 1108 | Too many retries | Too many retries |
+| Code  | Message                    | Описание                 |
+| ----- | -------------------------- | ------------------------ |
+| 1101  | Account already registered | Аккаунт зарегестрирован  |
+| 1102  | Invalid step taken         | Неверный шаг регистрации |
+| 1107  | Try later                  | Try later                |
+| 1108  | Too many retries           | Too many retries         |
 
 ### setUsername
 
@@ -192,13 +205,14 @@ toBlockChain:             // Последний шаг регистрации, �
     }
 }
 ```
+
 Ошибки
 
-| Code | Message | Описание |
-| --- | --- | --- |
-| 1101 | Account already registered | Аккаунт зарегестрирован |
-| 1102 | Invalid step taken | Неверный шаг регистрации |
-| 1106 | This username is already taken | Данный username уже занят |
+| Code  | Message                        | Описание                  |
+| ----- | ------------------------------ | ------------------------- |
+| 1101  | Account already registered     | Аккаунт зарегестрирован   |
+| 1102  | Invalid step taken             | Неверный шаг регистрации  |
+| 1106  | This username is already taken | Данный username уже занят |
 
 ### toBlockChain
 
@@ -213,8 +227,8 @@ toBlockChain:             // Последний шаг регистрации, �
         "phone": "+380000000000",
         "username": "some-user-name",
         "userId": "<userId c шага setUsername>",
-        "publicOwnerKey": "GLS8Bb....", 
-    	"publicActiveKey": "GLS35B...."
+        "publicOwnerKey": "GLS8Bb....",
+        "publicActiveKey": "GLS35B...."
     }
 }
 ```
@@ -232,10 +246,93 @@ toBlockChain:             // Последний шаг регистрации, �
     }
 }
 ```
+
+### onboardingCommunitySubscriptions
+
+=> Запрос
+
+```json
+{
+    "id": 1,
+    "method": "onboardingCommunitySubscriptions",
+    "jsonrpc": "2.0",
+    "params": {
+        "userId": "tst5swkjbtgy",
+        "communityIds": ["GIFS", "GIRLS", "HEALTH"]
+    }
+}
+```
+
+<= Ответ
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "status": "OK"
+    }
+}
+```
+
+### onboardingDeviceSwitched
+
+=> Запрос
+
+```json
+{
+    "id": 1,
+    "method": "onboardingDeviceSwitched",
+    "jsonrpc": "2.0",
+    "params": {
+        "userId": "tst5swkjbtgy"
+    }
+}
+```
+
+<= Ответ
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "status": "OK"
+    }
+}
+```
+
+### onboardingSharedLink
+
+=> Запрос
+
+```json
+{
+    "id": 1,
+    "method": "onboardingSharedLink",
+    "jsonrpc": "2.0",
+    "params": {
+        "userId": "tst5swkjbtgy"
+    }
+}
+```
+
+<= Ответ
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "status": "OK"
+    }
+}
+```
+
 Ошибки
 
-| Code | Message | Описание |
-| --- | --- | --- |
-| 1101 | Account already registered | Аккаунт зарегестрирован |
-| 1102 | Invalid step taken | Неверный шаг регистрации |
-| 500 | Internal Service Error | Ошибка сервиса |
+| Code  | Message                    | Описание                 |
+| ----- | -------------------------- | ------------------------ |
+| 1101  | Account already registered | Аккаунт зарегестрирован  |
+| 1102  | Invalid step taken         | Неверный шаг регистрации |
+| 500   | Internal Service Error     | Ошибка сервиса           |
