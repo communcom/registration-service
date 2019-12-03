@@ -405,7 +405,7 @@ class Registration extends Basic {
             { _id: false, userId: true },
             { lean: true }
         );
-        if (!user) {
+        if (!user || !user.userId) {
             throw { code: 1103, message: 'Invalid referralId' };
         }
 
