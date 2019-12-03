@@ -33,6 +33,7 @@ module.exports = {
     GLS_POINT_SENDER_KEY: env.GLS_POINT_SENDER_KEY,
 
     GLS_TESTING_PASS: env.GLS_TESTING_PASS,
+    GLS_ALLOW_NON_REFERRALS: env.GLS_ALLOW_NON_REFERRALS === 'true',
 };
 
 if (module.exports.GLS_IS_REG_ENABLED_ON_START === 'true') {

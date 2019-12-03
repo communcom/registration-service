@@ -56,7 +56,7 @@ class Registration extends Basic {
             this.throwIfInvalidState(userModel.state, States.FIRST_STEP);
         }
 
-        if (referralId) {
+        if (referralId || !env.GLS_ALLOW_NON_REFERRALS) {
             await this.checkReferredUserExists({ referralId });
         }
 
