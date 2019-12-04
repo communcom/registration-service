@@ -49,14 +49,18 @@ class Registration extends Basic {
         return { currentState: userModel.state };
     }
 
-    async firstStep({ phone, captcha, captchaType, referralId, testingPass = null }) {
+    async firstStep(
+        { phone, captcha, captchaType, referralId, testingPass = null },
+        {},
+        { deviceType }
+    ) {
         const userModel = await this._getUserModel(phone);
         if (userModel) {
             this.throwIfRegistred(userModel.isRegistered);
             this.throwIfInvalidState(userModel.state, States.FIRST_STEP);
         }
 
-        if (referralId || !env.GLS_ALLOW_NON_REFERRALS) {
+        if ((referralId || !env.GLS_ALLOW_NON_REFERRALS) && deviceType === 'desktop') {
             await this.checkReferredUserExists({ referralId });
         }
 
