@@ -224,17 +224,26 @@ class Registration extends Basic {
         }
     }
 
-    async onboardingDeviceSwitched({ userId }) {
+    async onboardingDeviceSwitched({}, { userId }, { deviceType }) {
         const user = await User.findOne(
             { userId },
             {
                 onboardingDeviceSwitched: true,
                 onboardingCommunitySubscriptions: true,
+                devicesUsed: true,
             },
             { lean: true }
         );
 
-        if (user && user.onboardingDeviceSwitched === false) {
+        if (!user) {
+            return;
+        }
+
+        if (
+            user.devicesUsed.length > 0 &&
+            user.onboardingDeviceSwitched === false &&
+            !user.devicesUsed.includes(deviceType)
+        ) {
             for (const communityId of user.onboardingCommunitySubscriptions) {
                 await this.blockchain.transferCommunityTokens({
                     userId,
@@ -250,6 +259,8 @@ class Registration extends Basic {
                 );
             }
         }
+
+        await User.update({ userId }, { $addToSet: { devicesUsed: deviceType } });
     }
 
     async onboardingSharedLink({ userId }) {
