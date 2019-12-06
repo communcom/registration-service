@@ -213,14 +213,6 @@ class Connector extends BasicConnector {
                             scope: this,
                         },
                     ],
-                    validation: {
-                        required: ['userId'],
-                        properties: {
-                            userId: {
-                                type: 'string',
-                            },
-                        },
-                    },
                 },
                 onboardingSharedLink: {
                     handler: this._registration.onboardingSharedLink,
