@@ -64,6 +64,10 @@ module.exports =
                 type: Boolean,
                 default: false,
             },
+            devicesUsed: {
+                type: [String],
+                default: [],
+            },
 
             // Tests
             isTestingSystem: {
