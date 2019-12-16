@@ -364,7 +364,7 @@ class Registration extends Basic {
         } catch (error) {
             throw {
                 code: 1113,
-                error: 'Cannot send sms code',
+                message: 'Cannot send sms code',
                 data: error,
             };
         }
