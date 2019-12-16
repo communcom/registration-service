@@ -359,7 +359,15 @@ class Registration extends Basic {
             return { code };
         }
 
-        await this.callService('sms', 'plainSms', { phone, message });
+        try {
+            await this.callService('sms', 'plainSms', { phone, message });
+        } catch (error) {
+            throw {
+                code: 1113,
+                message: 'Cannot send sms code',
+                data: error,
+            };
+        }
 
         return { code };
     }
