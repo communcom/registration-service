@@ -32,6 +32,13 @@ class Phone {
         return phone.startsWith('+') ? phone : `+${phone}`;
     }
 
+    static validatePhone(phone) {
+        phone = Phone.normalizePhone(phone);
+        const regExp = /^\+[1-9]\d{1,14}$/;
+
+        return regExp.test(phone);
+    }
+
     static makeSmsCode() {
         return random.int(1000, 9999);
     }

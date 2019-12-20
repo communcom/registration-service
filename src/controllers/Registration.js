@@ -54,6 +54,14 @@ class Registration extends Basic {
         {},
         { deviceType }
     ) {
+        const isPhoneValid = PhoneUtils.validatePhone(phone);
+        if (!isPhoneValid) {
+            throw {
+                code: 1104,
+                message: 'Phone is not valid for E.164 standard',
+            };
+        }
+
         const userModel = await this._getUserModel(phone);
         if (userModel) {
             this.throwIfRegistred(userModel.isRegistered);
