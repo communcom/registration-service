@@ -116,7 +116,7 @@ class Blockchain {
                     data: {
                         creator: env.GLS_REGISTRATION_ACCOUNT,
                         name: userId,
-                        owner: this._generateAuthorityObject(publicOwnerKey),
+                        owner: this._generateAuthorityObject(publicOwnerKey, true),
                         active: this._generateAuthorityObject(publicActiveKey),
                     },
                 },
@@ -153,8 +153,22 @@ class Blockchain {
         };
     }
 
-    _generateAuthorityObject(key) {
-        return { threshold: 1, keys: [{ key, weight: 1 }], accounts: [], waits: [] };
+    _generateAuthorityObject(key, addRecoveryAccount = false) {
+        return {
+            threshold: 1,
+            keys: [{ key, weight: 1 }],
+            accounts: addRecoveryAccount
+                ? [
+                      {
+                          permission: {
+                              actor: 'c.recover',
+                              permission: 'cyber.code',
+                          },
+                      },
+                  ]
+                : [],
+            waits: [],
+        };
     }
 
     async generateNewUserId() {
