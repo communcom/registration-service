@@ -164,6 +164,7 @@ class Blockchain {
                               actor: 'c.recover',
                               permission: 'cyber.code',
                           },
+                          weight: 1,
                       },
                   ]
                 : [],
