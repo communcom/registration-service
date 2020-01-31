@@ -325,15 +325,18 @@ class Registration extends Basic {
             throw { code: 1108, message: 'Too many retries' };
         }
 
+        let smsCodeDate;
         try {
             const { code } = await this._sendSmsCode(phone);
-
+            
+            smsCodeDate = new Date();
+            
             await User.updateOne(
                 { phone },
                 {
                     smsCodeResendCount: userModel.smsCodeResendCount + 1,
                     smsCode: code,
-                    smsCodeDate: new Date(),
+                    smsCodeDate,
                 }
             );
         } catch (err) {
@@ -342,7 +345,7 @@ class Registration extends Basic {
         }
 
         return {
-            nextSmsRetry: this._calcNextSmsRetry(userModel.smsCodeDate),
+            nextSmsRetry: this._calcNextSmsRetry(smsCodeDate),
             currentState: States.VERIFY,
         };
     }
