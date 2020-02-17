@@ -4,6 +4,7 @@ const Logger = core.utils.Logger;
 
 const env = require('../data/env');
 const States = require('../data/states');
+const SPECIAL_REFERRALS = require('../data/specialReferrals');
 
 const PhoneUtils = require('../utils/Phone');
 const Blockchain = require('../utils/Blockchain');
@@ -183,7 +184,7 @@ class Registration extends Basic {
                 }
             );
 
-            if (userModel.referralId) {
+            if (userModel.referralId && !SPECIAL_REFERRALS.includes(userModel.referralId)) {
                 await User.updateOne(
                     { userId: userModel.referralId },
                     { $addToSet: { referrals: userId } }
@@ -434,6 +435,10 @@ class Registration extends Basic {
     }
 
     async checkReferredUserExists({ referralId }) {
+        if (SPECIAL_REFERRALS.includes(referralId)) {
+            return true;
+        }
+
         const user = await User.findOne(
             { userId: referralId },
             { _id: false, userId: true },
