@@ -329,9 +329,9 @@ class Registration extends Basic {
         let smsCodeDate;
         try {
             const { code } = await this._sendSmsCode(phone);
-            
+
             smsCodeDate = new Date();
-            
+
             await User.updateOne(
                 { phone },
                 {

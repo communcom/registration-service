@@ -6,3 +6,4 @@ legacy-phones.csv
 .vscode
 .npmrc
 stats.txt
+docker-compose.yml
