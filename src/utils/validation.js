@@ -1,13 +1,13 @@
 const ERRORS = {
-    IS_EMPTY: "Username can't be empty",
-    INVALID_SYMBOLS: 'Username should have only letters, digits, dots or dashes',
-    START_WITH: 'Username should start with letter',
-    TOO_SHORT: 'Username is too short. Minimal required length is 3 symbols',
-    TOO_LONG: 'Username is too long. Maximum length is 32 symbols',
-    SEVERAL_DOTS: "Username can't contain several dots in a row",
-    SEVERAL_DASHES: "Username can't contain several dashes in a row",
-    INVALID_SEQUENCES: `Username can't contain ".-" and "-." sequences`,
-    ENDS_WITH: 'Username should end with a letter or digit',
+    IS_EMPTY: 'Username is empty',
+    INVALID_SYMBOLS: 'Username may contain only lower case letters, digits, dots or dashes',
+    START_WITH: 'Username should start with a letter',
+    TOO_SHORT: 'Username should contain at least 3 symbols',
+    TOO_LONG: 'Username is too long. 32 symbols are maximum',
+    SEVERAL_DOTS: 'Username may contain only one dot in a row',
+    SEVERAL_DASHES: 'Username may contain only one dash in a row',
+    INVALID_SEQUENCES: 'Username may contain only one dot or one dash in a row',
+    ENDS_WITH: 'Username should end with a letter or a digit',
 };
 
 // https://cyberway.gitbook.io/ru/v/master-ru/developers/system_contracts/cyber.domain_contract#trebovaniya-predyavlyaemye-k-imenam-polzovatelei-username
