@@ -1,44 +1,57 @@
+const ERRORS = {
+    IS_EMPTY: 'Username is empty',
+    INVALID_SYMBOLS: 'Username may contain only lower case letters, digits, dots or dashes',
+    START_WITH: 'Username should start with a letter',
+    TOO_SHORT: 'Username should contain at least 3 symbols',
+    TOO_LONG: 'Username is too long. 32 symbols are maximum',
+    SEVERAL_DOTS: 'Username may contain only one dot in a row',
+    SEVERAL_DASHES: 'Username may contain only one dash in a row',
+    INVALID_SEQUENCES: 'Username may contain only one dot or one dash in a row',
+    ENDS_WITH: 'Username should end with a letter or a digit',
+};
+
 // https://cyberway.gitbook.io/ru/v/master-ru/developers/system_contracts/cyber.domain_contract#trebovaniya-predyavlyaemye-k-imenam-polzovatelei-username
 function validateUsername(value) {
-    let suffix;
-
-    suffix = 'Username should ';
-
     if (!value) {
-        return suffix + 'not be empty';
+        return ERRORS.IS_EMPTY;
     }
-    if (value.length < 5) {
-        return suffix + 'be longer';
+
+    if (!/^[a-z0-9.-]+$/.test(value)) {
+        return ERRORS.INVALID_SYMBOLS;
     }
+
+    if (!/^[a-z]/.test(value)) {
+        return ERRORS.START_WITH;
+    }
+
+    if (value.length < 3) {
+        return ERRORS.TOO_SHORT;
+    }
+
     if (value.length > 32) {
-        return suffix + 'be shorter';
+        return ERRORS.TOO_LONG;
     }
 
-    if (/\./.test(value)) {
-        suffix = 'Each username segment should ';
+    if (/\.\./.test(value)) {
+        return ERRORS.SEVERAL_DOTS;
     }
 
-    const segments = value.split('.');
-    for (const segment of segments) {
-        if (!/^[a-z]/.test(segment)) {
-            return suffix + 'start with a letter';
-        }
-        if (!/^[a-z0-9-]*$/.test(segment)) {
-            return suffix + 'have only letters, digits, or dashes';
-        }
-        if (/--/.test(segment)) {
-            return suffix + 'have only one dash in a row';
-        }
-        if (!/[a-z0-9]$/.test(segment)) {
-            return suffix + 'end with a letter or digit';
-        }
-        if (!(segment.length >= 5)) {
-            return suffix + 'be longer';
-        }
+    if (/--/.test(value)) {
+        return ERRORS.SEVERAL_DASHES;
     }
+
+    if (/\.-|-\./.test(value)) {
+        return ERRORS.INVALID_SEQUENCES;
+    }
+
+    if (!/[a-z0-9]$/.test(value)) {
+        return ERRORS.ENDS_WITH;
+    }
+
     return null;
 }
 
 module.exports = {
+    ERRORS,
     validateUsername,
 };

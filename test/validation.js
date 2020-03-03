@@ -1,28 +1,50 @@
 const { assert } = require('chai');
 
-const { validateUsername } = require('../src/utils/validation');
+const { validateUsername, ERRORS } = require('../src/utils/validation');
+
+function okName(username) {
+    assert.equal(validateUsername(username), null);
+}
+
+function badName(username, error) {
+    assert.equal(validateUsername(username), error);
+}
 
 describe('validation', () => {
-    it('validateUsername', () => {
-        assert.equal(validateUsername(), 'Username should not be empty');
-        assert.equal(validateUsername('abcd'), 'Username should be longer');
-        assert.equal(validateUsername('abcdef.abcd'), 'Each username segment should be longer');
-        assert.equal(
-            validateUsername('abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz'),
-            'Username should be shorter'
-        );
-        assert.equal(validateUsername('5bcdef'), 'Username should start with a letter');
-        assert.equal(
-            validateUsername('.abcdef'),
-            'Each username segment should start with a letter'
-        );
-        assert.equal(
-            validateUsername('abcd$f'),
-            'Username should have only letters, digits, or dashes'
-        );
+    describe('validateUsername', () => {
+        it('negative scenarios', () => {
+            badName('', ERRORS.IS_EMPTY);
+            badName('ab', ERRORS.TOO_SHORT);
+            badName('a'.repeat(33), ERRORS.TOO_LONG);
 
-        assert.equal(validateUsername('abcd--adv'), 'Username should have only one dash in a row');
+            badName('5bcdef', ERRORS.START_WITH);
+            badName('.abcdef', ERRORS.START_WITH);
 
-        assert.equal(validateUsername('abcdef-'), 'Username should end with a letter or digit');
+            badName('abcd$f', ERRORS.INVALID_SYMBOLS);
+            badName('привет', ERRORS.INVALID_SYMBOLS);
+
+            badName('abcd--adv', ERRORS.SEVERAL_DASHES);
+            badName('abcd..adv', ERRORS.SEVERAL_DOTS);
+
+            badName('abcd.-adv', ERRORS.INVALID_SEQUENCES);
+            badName('abcd-.adv', ERRORS.INVALID_SEQUENCES);
+
+            badName('abcdef-', ERRORS.ENDS_WITH);
+            badName('abcdef.', ERRORS.ENDS_WITH);
+        });
+
+        it('positive scenarios', () => {
+            okName('abc');
+            okName('test');
+            okName('test123');
+            okName('test.123');
+            okName('t.est.123');
+            okName('t.est.12.3');
+            okName('test-123');
+            okName('t-est-123');
+            okName('t-est-12-3');
+            okName('t.e-s.t.12-3');
+            okName('a'.repeat(32));
+        });
     });
 });
