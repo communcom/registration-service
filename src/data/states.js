@@ -4,4 +4,5 @@ module.exports = {
     SET_USERNAME: 'setUsername',
     TO_BLOCK_CHAIN: 'toBlockChain',
     REGISTERED: 'registered',
+    CREATE_IDENTITY: 'createIdentity',
 };
