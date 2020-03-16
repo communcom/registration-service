@@ -34,6 +34,7 @@ module.exports = {
 
     GLS_TESTING_PASS: env.GLS_TESTING_PASS,
     GLS_ALLOW_NON_REFERRALS: env.GLS_ALLOW_NON_REFERRALS === 'true',
+    GLS_OAUTH_SECURE_KEY: env.GLS_OAUTH_SECURE_KEY,
 };
 
 if (module.exports.GLS_IS_REG_ENABLED_ON_START === 'true') {

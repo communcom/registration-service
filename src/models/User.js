@@ -68,6 +68,12 @@ module.exports =
                 type: [String],
                 default: [],
             },
+            provider: {
+                type: String,
+            },
+            identity: {
+                type: String,
+            },
 
             // Tests
             isTestingSystem: {
