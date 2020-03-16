@@ -31,7 +31,7 @@ class Referral extends Basic {
             };
         }
 
-        const items = await this.callService(
+        return await this.callService(
             'prism',
             'getUsers',
             {
@@ -40,10 +40,6 @@ class Referral extends Basic {
             auth,
             clientInfo
         );
-
-        return {
-            items,
-        };
     }
 }
 
