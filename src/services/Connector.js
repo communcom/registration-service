@@ -4,12 +4,14 @@ const BasicConnector = core.services.Connector;
 const env = require('../data/env');
 
 const Registration = require('../controllers/Registration');
+const Referral = require('../controllers/Referral');
 
 class Connector extends BasicConnector {
     constructor() {
         super();
 
         this._registration = new Registration({ connector: this });
+        this._referral = new Referral({ connector: this });
 
         this._isEnabled = env.GLS_IS_REG_ENABLED_ON_START;
     }
@@ -260,6 +262,22 @@ class Connector extends BasicConnector {
                             },
                             secureKey: {
                                 type: 'string',
+                            },
+                        },
+                    },
+                },
+                getReferralUsers: {
+                    handler: this._referral.getReferralUsers,
+                    scope: this._referral,
+                    validation: {
+                        properties: {
+                            offset: {
+                                type: 'number',
+                                default: 0,
+                            },
+                            limit: {
+                                type: 'number',
+                                default: 20,
                             },
                         },
                     },
