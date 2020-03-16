@@ -27,9 +27,11 @@ class Connector extends BasicConnector {
                         },
                     ],
                     validation: {
-                        required: ['phone'],
                         properties: {
                             phone: {
+                                type: 'string',
+                            },
+                            identity: {
                                 type: 'string',
                             },
                         },
@@ -98,9 +100,12 @@ class Connector extends BasicConnector {
                         },
                     ],
                     validation: {
-                        required: ['phone', 'username'],
+                        required: ['username'],
                         properties: {
                             phone: {
+                                type: 'string',
+                            },
+                            identity: {
                                 type: 'string',
                             },
                             username: {
@@ -119,9 +124,12 @@ class Connector extends BasicConnector {
                         },
                     ],
                     validation: {
-                        required: ['phone', 'username', 'publicOwnerKey', 'publicActiveKey'],
+                        required: ['username', 'publicOwnerKey', 'publicActiveKey'],
                         properties: {
                             phone: {
+                                type: 'string',
+                            },
+                            identity: {
                                 type: 'string',
                             },
                             username: {
@@ -227,6 +235,30 @@ class Connector extends BasicConnector {
                         required: ['userId'],
                         properties: {
                             userId: {
+                                type: 'string',
+                            },
+                        },
+                    },
+                },
+                createIdentity: {
+                    handler: this._registration.createIdentity,
+                    scope: this._registration,
+                    before: [
+                        {
+                            handler: this._checkEnable,
+                            scope: this,
+                        },
+                    ],
+                    validation: {
+                        required: ['identity', 'provider', 'secureKey'],
+                        properties: {
+                            identity: {
+                                type: 'string',
+                            },
+                            provider: {
+                                type: 'string',
+                            },
+                            secureKey: {
                                 type: 'string',
                             },
                         },

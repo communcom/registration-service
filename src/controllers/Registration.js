@@ -23,17 +23,24 @@ class Registration extends Basic {
         this.blockchain = new Blockchain();
     }
 
-    async _getUserModel(phone) {
+    async _getUserModel(phone, identity) {
+        if (identity) {
+            return await User.findOne({ identity });
+        }
+
         phone = PhoneUtils.normalizePhone(phone);
         const phoneHash = PhoneUtils.saltedHash(phone);
 
         return await User.findOne({ $or: [{ phone }, { phoneHash }] });
     }
 
-    async getState({ phone }) {
-        const userModel = await this._getUserModel(phone);
+    async getState({ phone, identity }) {
+        const userModel = await this._getUserModel(phone, identity);
 
         if (!userModel) {
+            if (identity) {
+                return { currentState: States.CREATE_IDENTITY };
+            }
             return { currentState: States.FIRST_STEP };
         }
 
@@ -126,10 +133,13 @@ class Registration extends Basic {
         return { currentState: States.SET_USERNAME };
     }
 
-    async setUsername({ phone, username }) {
-        const userModel = await this._getUserModel(phone);
+    async setUsername({ phone, username, identity }) {
+        const userModel = await this._getUserModel(phone, identity);
 
         if (!userModel) {
+            if (identity) {
+                return { currentState: States.CREATE_IDENTITY };
+            }
             return { currentState: States.FIRST_STEP };
         }
 
@@ -140,15 +150,19 @@ class Registration extends Basic {
 
         const userId = await this.blockchain.generateNewUserId();
 
-        await User.updateOne({ phone }, { userId, username, state: States.TO_BLOCK_CHAIN });
+        const query = identity ? { identity } : { phone };
+        await User.updateOne(query, { userId, username, state: States.TO_BLOCK_CHAIN });
 
         return { userId, currentState: States.TO_BLOCK_CHAIN };
     }
 
-    async toBlockChain({ phone, userId, username, publicOwnerKey, publicActiveKey }) {
-        const userModel = await this._getUserModel(phone);
+    async toBlockChain({ phone, identity, userId, username, publicOwnerKey, publicActiveKey }) {
+        const userModel = await this._getUserModel(phone, identity);
 
         if (!userModel) {
+            if (identity) {
+                return { currentState: States.CREATE_IDENTITY };
+            }
             return { currentState: States.FIRST_STEP };
         }
 
@@ -163,6 +177,8 @@ class Registration extends Basic {
             throw { code: 1111, message: 'User id mismatch' };
         }
 
+        const query = identity ? { identity } : { phone };
+
         try {
             const { transactionId } = await this.blockchain.registerInBlockChain(
                 userModel.userId,
@@ -173,16 +189,18 @@ class Registration extends Basic {
 
             // TODO waitForTransaction
 
-            await User.updateOne(
-                { phone },
-                {
-                    isRegistered: true,
-                    phone: PhoneUtils.maskBody(phone),
-                    phoneHash: PhoneUtils.saltedHash(phone),
-                    userId,
-                    state: States.REGISTERED,
-                }
-            );
+            const userObj = {
+                isRegistered: true,
+                userId,
+                state: States.REGISTERED,
+            };
+
+            if (phone) {
+                userObj.phone = PhoneUtils.maskBody(phone);
+                userObj.phoneHash = PhoneUtils.saltedHash(phone);
+            }
+
+            await User.updateOne(query, userObj);
 
             if (userModel.referralId && !SPECIAL_REFERRALS.includes(userModel.referralId)) {
                 await User.updateOne(
@@ -299,6 +317,32 @@ class Registration extends Basic {
                 );
             }
         }
+    }
+
+    async createIdentity({ identity, provider, secureKey }) {
+        if (secureKey !== env.GLS_OAUTH_SECURE_KEY) {
+            throw { code: 1108, message: 'Wrong secure key' };
+        }
+
+        const userModel = await this._getUserModel(null, identity);
+
+        if (userModel) {
+            this.throwIfRegistred(userModel.isRegistered);
+            this.throwIfInvalidState(userModel.state, States.CREATE_IDENTITY);
+        }
+
+        await User.create({
+            identity,
+            provider,
+            state: States.SET_USERNAME,
+        });
+
+        return {
+            success: true,
+            currentState: States.SET_USERNAME,
+            identity,
+            provider,
+        };
     }
 
     async resendSmsCode({ phone }) {
