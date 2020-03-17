@@ -1,1 +1,1 @@
-module.exports = ['kava'];
+module.exports = ['kava', 'dankmeme'];
