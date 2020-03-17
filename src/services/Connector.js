@@ -266,6 +266,33 @@ class Connector extends BasicConnector {
                         },
                     },
                 },
+                appendReferralParent: {
+                    handler: this._registration.appendReferralParent,
+                    scope: this._registration,
+                    before: [
+                        {
+                            handler: this._checkEnable,
+                            scope: this,
+                        },
+                    ],
+                    validation: {
+                        required: ['referralId'],
+                        properties: {
+                            identity: {
+                                type: 'string',
+                            },
+                            phone: {
+                                type: 'string',
+                            },
+                            userId: {
+                                type: 'string',
+                            },
+                            referralId: {
+                                type: 'string',
+                            },
+                        },
+                    },
+                },
                 getReferralUsers: {
                     handler: this._referral.getReferralUsers,
                     scope: this._referral,

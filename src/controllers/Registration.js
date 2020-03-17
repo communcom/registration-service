@@ -495,6 +495,39 @@ class Registration extends Basic {
         return true;
     }
 
+    async appendReferralParent({ referralId, phone, identity, userId }) {
+        if (!(phone || identity || userId)) {
+            throw {
+                code: 1005,
+                message: 'One of phone, identity or userId params are required',
+            };
+        }
+
+        await this.checkReferredUserExists({ referralId });
+
+        let resolveUserQuery = {};
+
+        if (userId) {
+            resolveUserQuery = { userId };
+        } else if (identity) {
+            resolveUserQuery = { identity };
+        } else {
+            phone = PhoneUtils.normalizePhone(phone);
+            const phoneHash = PhoneUtils.saltedHash(phone);
+
+            resolveUserQuery = { $or: [{ phone }, { phoneHash }] };
+        }
+
+        const user = await User.findOneAndUpdate(
+            { $and: [resolveUserQuery, { referralId: { $exists: false }, isRegistered: false }] },
+            { $set: { referralId } }
+        );
+
+        if (user) {
+            await User.updateOne({ userId: referralId }, { $addToSet: { referrals: user.userId } });
+        }
+    }
+
     _isTestingSystem(testingPass) {
         return testingPass === env.GLS_TESTING_PASS;
     }
