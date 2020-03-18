@@ -187,14 +187,14 @@ class Registration extends Basic {
                 publicActiveKey
             );
 
-            if (userModel.referralId) {
+            if (userModel.referralId && env.GLS_REFERRAL_BONUS) {
                 const referralId = userModel.referralId;
 
                 this.callService('payment', 'sendPayment', {
                     apiKey: env.GLS_PAYMENT_API_KEY,
                     userId: referralId,
-                    quantity: '1.0000 CMN',
-                    memo: `referral registration bonus for: ${userModel.username}(${userModel.userId})`,
+                    quantity: env.GLS_REFERRAL_BONUS,
+                    memo: `referral registration bonus for: ${userModel.username} (${userModel.userId})`,
                 }).catch(err => {
                     Logger.error(
                         `Error while sending referral bonus to ${referralId} ` +
