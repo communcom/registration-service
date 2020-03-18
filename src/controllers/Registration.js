@@ -187,6 +187,23 @@ class Registration extends Basic {
                 publicActiveKey
             );
 
+            if (userModel.referralId) {
+                const referralId = userModel.referralId;
+
+                this.callService('payment', 'sendPayment', {
+                    apiKey: env.GLS_PAYMENT_API_KEY,
+                    userId: referralId,
+                    quantity: '1.0000 CMN',
+                    memo: `referral registration bonus from: ${userModel.userId}`,
+                }).catch(err => {
+                    Logger.error(
+                        `Error while sending referral bonus to ${referralId} ` +
+                            `per registration ${userModel.userId}:`,
+                        err
+                    );
+                });
+            }
+
             // TODO waitForTransaction
 
             const userObj = {
