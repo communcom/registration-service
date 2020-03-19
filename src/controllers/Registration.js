@@ -345,7 +345,15 @@ class Registration extends Basic {
 
         if (userModel) {
             this.throwIfRegistred(userModel.isRegistered);
-            this.throwIfInvalidState(userModel.state, States.CREATE_IDENTITY);
+            if (userModel.state !== States.CREATE_IDENTITY) {
+                throw {
+                    code: 1102,
+                    message: 'Invalid step taken',
+                    currentState: userModel.state,
+                    identity: userModel.identity,
+                    provider: userModel.provider,
+                };
+            }
         }
 
         await User.create({
