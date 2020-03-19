@@ -314,6 +314,7 @@ class Connector extends BasicConnector {
                 facade: env.GLS_FACADE_CONNECT,
                 sms: env.GLS_SMS_CONNECT,
                 prism: env.GLS_PRISM_CONNECT,
+                payment: env.GLS_PAYMENT_CONNECT,
             },
         });
     }
