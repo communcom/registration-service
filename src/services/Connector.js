@@ -113,6 +113,9 @@ class Connector extends BasicConnector {
                             username: {
                                 type: 'string',
                             },
+                            referralId: {
+                                type: 'string',
+                            },
                         },
                     },
                 },

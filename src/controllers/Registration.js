@@ -133,7 +133,7 @@ class Registration extends Basic {
         return { currentState: States.SET_USERNAME };
     }
 
-    async setUsername({ phone, username, identity }) {
+    async setUsername({ phone, username, identity, referralId }) {
         const userModel = await this._getUserModel(phone, identity);
 
         if (!userModel) {
@@ -150,8 +150,12 @@ class Registration extends Basic {
 
         const userId = await this.blockchain.generateNewUserId();
 
+        if (referralId || !env.GLS_ALLOW_NON_REFERRALS) {
+            await this.checkReferredUserExists({ referralId });
+        }
+
         const query = identity ? { identity } : { phone };
-        await User.updateOne(query, { userId, username, state: States.TO_BLOCK_CHAIN });
+        await User.updateOne(query, { userId, username, state: States.TO_BLOCK_CHAIN, referralId });
 
         return { userId, currentState: States.TO_BLOCK_CHAIN };
     }
