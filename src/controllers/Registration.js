@@ -150,12 +150,20 @@ class Registration extends Basic {
 
         const userId = await this.blockchain.generateNewUserId();
 
+        const userObj = {
+            userId,
+            username,
+            state: States.TO_BLOCK_CHAIN,
+        };
+
         if (referralId || !env.GLS_ALLOW_NON_REFERRALS) {
             await this.checkReferredUserExists({ referralId });
+
+            userObj.referralId = referralId;
         }
 
         const query = identity ? { identity } : { phone };
-        await User.updateOne(query, { userId, username, state: States.TO_BLOCK_CHAIN, referralId });
+        await User.updateOne(query, userObj);
 
         return { userId, currentState: States.TO_BLOCK_CHAIN };
     }
