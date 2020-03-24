@@ -50,6 +50,8 @@ class Referral extends Basic {
             },
             {
                 _id: false,
+                userId: true,
+                username: true,
                 referralId: true,
             },
             {
@@ -60,7 +62,14 @@ class Referral extends Basic {
         if (!user) {
             throw {
                 code: 404,
-                message: 'User is not found',
+                message: 'Requested user is not found',
+            };
+        }
+
+        if (!user.referralId) {
+            return {
+                user,
+                referralParent: null,
             };
         }
 
@@ -85,7 +94,10 @@ class Referral extends Basic {
             };
         }
 
-        return referralParent;
+        return {
+            user,
+            referralParent,
+        };
     }
 }
 
