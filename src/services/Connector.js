@@ -312,6 +312,18 @@ class Connector extends BasicConnector {
                         },
                     },
                 },
+                getReferralParent: {
+                    handler: this._referral.getReferralParent,
+                    scope: this._referral,
+                    validation: {
+                        required: ['userId'],
+                        properties: {
+                            userId: {
+                                type: 'string',
+                            },
+                        },
+                    },
+                },
             },
             requiredClients: {
                 facade: env.GLS_FACADE_CONNECT,
