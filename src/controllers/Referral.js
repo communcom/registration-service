@@ -64,9 +64,28 @@ class Referral extends Basic {
             };
         }
 
-        return {
-            referralId: user.referralId || null,
-        };
+        const referralParent = await UserModel.findOne(
+            {
+                userId: user.referralId,
+            },
+            {
+                _id: false,
+                userId: true,
+                username: true,
+            },
+            {
+                lean: true,
+            }
+        );
+
+        if (!referralParent) {
+            throw {
+                code: 500,
+                message: 'Invalid database state',
+            };
+        }
+
+        return referralParent;
     }
 }
 
