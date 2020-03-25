@@ -206,7 +206,7 @@ class Registration extends Basic {
                     apiKey: env.GLS_PAYMENT_API_KEY,
                     userId: referralId,
                     quantity: env.GLS_REFERRAL_BONUS,
-                    memo: `referral registration bonus for: ${userModel.username} (${userModel.userId})`,
+                    memo: `referral registration bonus from: ${userModel.username} (${userModel.userId})`,
                 }).catch(err => {
                     Logger.error(
                         `Error while sending referral bonus to ${referralId} ` +
