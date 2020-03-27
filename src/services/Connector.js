@@ -71,6 +71,38 @@ class Connector extends BasicConnector {
                         },
                     },
                 },
+                firstStepEmail: {
+                    handler: this._registration.firstStepEmail,
+                    scope: this._registration,
+                    before: [
+                        {
+                            handler: this._checkEnable,
+                            scope: this,
+                        },
+                    ],
+                    validation: {
+                        required: ['email', 'captcha'],
+                        properties: {
+                            email: {
+                                type: 'string',
+                            },
+                            captcha: {
+                                type: 'string',
+                            },
+                            captchaType: {
+                                type: 'string',
+                                enum: ['web', 'android', 'ios'],
+                                default: 'web',
+                            },
+                            referralId: {
+                                type: 'string',
+                            },
+                            testingPass: {
+                                type: 'string',
+                            },
+                        },
+                    },
+                },
                 verify: {
                     handler: this._registration.verify,
                     scope: this._registration,
@@ -92,6 +124,27 @@ class Connector extends BasicConnector {
                         },
                     },
                 },
+                verifyEmail: {
+                    handler: this._registration.verifyEmail,
+                    scope: this._registration,
+                    before: [
+                        {
+                            handler: this._checkEnable,
+                            scope: this,
+                        },
+                    ],
+                    validation: {
+                        required: ['email', 'code'],
+                        properties: {
+                            email: {
+                                type: 'string',
+                            },
+                            code: {
+                                type: 'string',
+                            },
+                        },
+                    },
+                },
                 setUsername: {
                     handler: this._registration.setUsername,
                     scope: this._registration,
@@ -108,6 +161,9 @@ class Connector extends BasicConnector {
                                 type: 'string',
                             },
                             identity: {
+                                type: 'string',
+                            },
+                            email: {
                                 type: 'string',
                             },
                             username: {
@@ -137,6 +193,9 @@ class Connector extends BasicConnector {
                             identity: {
                                 type: 'string',
                             },
+                            email: {
+                                type: 'string',
+                            },
                             username: {
                                 type: 'string',
                             },
@@ -163,6 +222,24 @@ class Connector extends BasicConnector {
                         required: ['phone'],
                         properties: {
                             phone: {
+                                type: 'string',
+                            },
+                        },
+                    },
+                },
+                resendEmailCode: {
+                    handler: this._registration.resendEmailCode,
+                    scope: this._registration,
+                    before: [
+                        {
+                            handler: this._checkEnable,
+                            scope: this,
+                        },
+                    ],
+                    validation: {
+                        required: ['email'],
+                        properties: {
+                            email: {
                                 type: 'string',
                             },
                         },
@@ -318,6 +395,7 @@ class Connector extends BasicConnector {
                 sms: env.GLS_SMS_CONNECT,
                 prism: env.GLS_PRISM_CONNECT,
                 payment: env.GLS_PAYMENT_CONNECT,
+                email: env.GLS_EMAIL_CONNECT,
             },
         });
     }
