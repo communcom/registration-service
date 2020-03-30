@@ -36,6 +36,9 @@ class Connector extends BasicConnector {
                             identity: {
                                 type: 'string',
                             },
+                            email: {
+                                type: 'string',
+                            },
                         },
                     },
                 },
