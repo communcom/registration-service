@@ -7,6 +7,7 @@ const States = require('../data/states');
 const SPECIAL_REFERRALS = require('../data/specialReferrals');
 
 const PhoneUtils = require('../utils/Phone');
+const EmailUtils = require('../utils/Email');
 const Blockchain = require('../utils/Blockchain');
 const { checkCaptcha } = require('../utils/captcha');
 const { validateUsername } = require('../utils/validation');
@@ -23,9 +24,16 @@ class Registration extends Basic {
         this.blockchain = new Blockchain();
     }
 
-    async _getUserModel(phone, identity) {
+    async _getUserModel({ phone, identity, email }) {
         if (identity) {
             return await User.findOne({ identity });
+        }
+
+        if (email) {
+            email = EmailUtils.normalizeEmail(email);
+            const emailHash = EmailUtils.saltedHash(email);
+
+            return await User.findOne({ $or: [{ email }, { emailHash }] });
         }
 
         phone = PhoneUtils.normalizePhone(phone);
@@ -34,13 +42,18 @@ class Registration extends Basic {
         return await User.findOne({ $or: [{ phone }, { phoneHash }] });
     }
 
-    async getState({ phone, identity }) {
-        const userModel = await this._getUserModel(phone, identity);
+    async getState({ phone, identity, email }) {
+        const userModel = await this._getUserModel({ phone, identity, email });
 
         if (!userModel) {
             if (identity) {
                 return { currentState: States.CREATE_IDENTITY };
             }
+
+            if (email) {
+                return { currentState: States.FIRST_STEP_EMAIL };
+            }
+
             return { currentState: States.FIRST_STEP };
         }
 
@@ -70,7 +83,7 @@ class Registration extends Basic {
             };
         }
 
-        const userModel = await this._getUserModel(phone);
+        const userModel = await this._getUserModel({ phone });
         if (userModel) {
             this.throwIfRegistred(userModel.isRegistered);
             this.throwIfInvalidState(userModel.state, States.FIRST_STEP);
@@ -115,7 +128,7 @@ class Registration extends Basic {
     }
 
     async verify({ phone, code }) {
-        const userModel = await this._getUserModel(phone);
+        const userModel = await this._getUserModel({ phone });
 
         if (!userModel) {
             return { currentState: States.FIRST_STEP };
@@ -133,13 +146,87 @@ class Registration extends Basic {
         return { currentState: States.SET_USERNAME };
     }
 
-    async setUsername({ phone, username, identity, referralId }) {
-        const userModel = await this._getUserModel(phone, identity);
+    async firstStepEmail({ email, captcha, captchaType, referralId, testingPass = null }) {
+        const isEmailValid = EmailUtils.validateEmail(email);
+        if (!isEmailValid) {
+            throw {
+                code: 1104,
+                message: 'Email address is not valid',
+            };
+        }
+
+        const userModel = await this._getUserModel({ email });
+        if (userModel) {
+            this.throwIfRegistred(userModel.isRegistered);
+            this.throwIfInvalidState(userModel.state, States.FIRST_STEP_EMAIL);
+        }
+
+        if (referralId || !env.GLS_ALLOW_NON_REFERRALS) {
+            await this.checkReferredUserExists({ referralId });
+        }
+
+        const isTestingSystem = this._isTestingSystem(testingPass);
+        if (this._isReCaptchaEnabled() && !isTestingSystem) {
+            await this._checkReCaptcha(captcha, captchaType);
+        }
+
+        const result = {};
+        try {
+            const { code } = await this._sendEmail(email, isTestingSystem);
+            if (isTestingSystem) {
+                result.code = code;
+            }
+
+            await User.create({
+                email,
+                emailCode: code,
+                emailCodeDate: new Date(),
+                state: States.VERIFY_EMAIL,
+                isTestingSystem,
+                referralId,
+            });
+        } catch (err) {
+            Logger.error('Send email error:', email, err);
+            throw err;
+        }
+
+        result.nextEmailRetry = this._calcNextEmailRetry();
+        result.currentState = States.VERIFY_EMAIL;
+
+        return result;
+    }
+
+    async verifyEmail({ email, code }) {
+        const userModel = await this._getUserModel({ email });
+
+        if (!userModel) {
+            return { currentState: States.FIRST_STEP_EMAIL };
+        }
+
+        this.throwIfRegistred(userModel.isRegistered);
+        this.throwIfInvalidState(userModel.state, States.VERIFY_EMAIL);
+
+        if (userModel.emailCode !== String(code)) {
+            throw { code: 1104, message: 'Wrong activation code' };
+        }
+
+        await User.updateOne({ email }, { isEmailVerified: true, state: States.SET_USERNAME });
+
+        return { currentState: States.SET_USERNAME };
+    }
+
+    async setUsername({ phone, identity, email, username, referralId }) {
+        const userModel = await this._getUserModel({ phone, identity, email });
 
         if (!userModel) {
             if (identity) {
                 return { currentState: States.CREATE_IDENTITY };
             }
+
+            if (email) {
+                return { currentState: States.FIRST_STEP_EMAIL };
+            }
+
             return { currentState: States.FIRST_STEP };
         }
 
@@ -149,6 +236,8 @@ class Registration extends Basic {
         await this._checkUsername(username);
 
         const userId = await this.blockchain.generateNewUserId();
+
+        const query = this._makeQuery({ phone, identity, email });
 
         const userObj = {
             userId,
@@ -162,19 +251,31 @@ class Registration extends Basic {
             userObj.referralId = referralId;
         }
 
-        const query = identity ? { identity } : { phone };
         await User.updateOne(query, userObj);
 
         return { userId, currentState: States.TO_BLOCK_CHAIN };
     }
 
-    async toBlockChain({ phone, identity, userId, username, publicOwnerKey, publicActiveKey }) {
-        const userModel = await this._getUserModel(phone, identity);
+    async toBlockChain({
+        phone,
+        identity,
+        email,
+        userId,
+        username,
+        publicOwnerKey,
+        publicActiveKey,
+    }) {
+        const userModel = await this._getUserModel({ phone, identity, email });
 
         if (!userModel) {
             if (identity) {
                 return { currentState: States.CREATE_IDENTITY };
             }
+
+            if (email) {
+                return { currentState: States.FIRST_STEP_EMAIL };
+            }
+
             return { currentState: States.FIRST_STEP };
         }
 
@@ -188,8 +289,6 @@ class Registration extends Basic {
         if (userModel.userId !== userId) {
             throw { code: 1111, message: 'User id mismatch' };
         }
-
-        const query = identity ? { identity } : { phone };
 
         try {
             const { transactionId } = await this.blockchain.registerInBlockChain(
@@ -218,6 +317,8 @@ class Registration extends Basic {
 
             // TODO waitForTransaction
 
+            const query = this._makeQuery({ phone, identity, email });
+
             const userObj = {
                 isRegistered: true,
                 userId,
@@ -227,6 +328,11 @@ class Registration extends Basic {
             if (phone) {
                 userObj.phone = PhoneUtils.maskBody(phone);
                 userObj.phoneHash = PhoneUtils.saltedHash(phone);
+            }
+
+            if (email) {
+                userObj.email = EmailUtils.maskBody(email);
+                userObj.emailHash = EmailUtils.saltedHash(email);
             }
 
             await User.updateOne(query, userObj);
@@ -353,7 +459,7 @@ class Registration extends Basic {
             throw { code: 1108, message: 'Wrong secure key' };
         }
 
-        const userModel = await this._getUserModel(null, identity);
+        const userModel = await this._getUserModel({ identity });
 
         if (userModel) {
             this.throwIfRegistred(userModel.isRegistered);
@@ -383,7 +489,7 @@ class Registration extends Basic {
     }
 
     async resendSmsCode({ phone }) {
-        const userModel = await this._getUserModel(phone);
+        const userModel = await this._getUserModel({ phone });
 
         if (!userModel) {
             return { currentState: States.FIRST_STEP };
@@ -432,16 +538,74 @@ class Registration extends Basic {
         };
     }
 
-    _calcNextSmsRetry(smsCodeDate) {
-        if (smsCodeDate) {
-            return new Date(new Date(smsCodeDate).getTime() + env.GLS_SMS_RESEND_CODE_TIMEOUT);
+    async resendEmailCode({ email }) {
+        const userModel = await this._getUserModel({ email });
+
+        if (!userModel) {
+            return { currentState: States.FIRST_STEP_EMAIL };
+        }
+
+        this.throwIfRegistred(userModel.isRegistered);
+        this.throwIfInvalidState(userModel.state, States.VERIFY_EMAIL);
+
+        if (
+            Date.now() - new Date(userModel.emailCodeDate).getTime() <
+            env.GLS_EMAIL_RESEND_CODE_TIMEOUT
+        ) {
+            throw {
+                code: 1107,
+                message: 'Try later',
+                nextEmailRetry: userModel.emailCodeDate,
+            };
+        }
+
+        if (userModel.emailCodeResendCount >= env.GLS_EMAIL_RESEND_CODE_MAX) {
+            throw { code: 1108, message: 'Too many retries' };
+        }
+
+        let emailCodeDate;
+        try {
+            const { code } = await this._sendEmail(email);
+
+            emailCodeDate = new Date();
+
+            await User.updateOne(
+                { email },
+                {
+                    emailCodeResendCount: userModel.emailCodeResendCount + 1,
+                    emailCode: code,
+                    emailCodeDate,
+                }
+            );
+        } catch (err) {
+            Logger.error('Send email error:', email, err);
+            throw err;
+        }
+
+        return {
+            nextEmailRetry: this._calcNextEmailRetry(emailCodeDate),
+            currentState: States.VERIFY_EMAIL,
+        };
+    }
+
+    _calcNextRetryCodeSend(codeDate, timeout) {
+        if (codeDate) {
+            return new Date(new Date(codeDate).getTime() + timeout);
         } else {
-            return new Date(Date.now() + env.GLS_SMS_RESEND_CODE_TIMEOUT);
+            return new Date(Date.now() + timeout);
         }
     }
 
+    _calcNextSmsRetry(smsCodeDate) {
+        return this._calcNextRetryCodeSend(smsCodeDate, env.GLS_SMS_RESEND_CODE_TIMEOUT);
+    }
+
+    _calcNextEmailRetry(emailCodeDate) {
+        return this._calcNextRetryCodeSend(emailCodeDate, env.GLS_EMAIL_RESEND_CODE_TIMEOUT);
+    }
+
     async _sendSmsCode(phone, isTestingSystem = false) {
-        if (this.isSmsSendCodeSkiped()) {
+        if (this._isSmsSendCodeSkiped()) {
             return { code: 1234 }; // test verification code
         }
 
@@ -458,6 +622,30 @@ class Registration extends Basic {
             throw {
                 code: 1113,
                 message: 'Cannot send sms code',
+                data: error,
+            };
+        }
+
+        return { code };
+    }
+
+    async _sendEmail(email, isTestingSystem) {
+        if (this._isEmailSendCodeSkiped()) {
+            return { code: '0123456789' }; // test verification code
+        }
+
+        const code = EmailUtils.makeEmailCode(env.GLS_EMAIL_CODE_LENGTH);
+
+        if (isTestingSystem) {
+            return { code };
+        }
+
+        try {
+            await this.callService('email', 'sendVerificationEmail', { email, code });
+        } catch (error) {
+            throw {
+                code: 1113,
+                message: 'Cannot send email code',
                 data: error,
             };
         }
@@ -565,6 +753,18 @@ class Registration extends Basic {
         }
     }
 
+    _makeQuery({ phone, identity, email }) {
+        if (identity) {
+            return { identity };
+        }
+
+        if (email) {
+            return { email };
+        }
+
+        return { phone };
+    }
+
     _isTestingSystem(testingPass) {
         return testingPass === env.GLS_TESTING_PASS;
     }
@@ -577,8 +777,12 @@ class Registration extends Basic {
         await checkCaptcha(captcha, type);
     }
 
-    isSmsSendCodeSkiped() {
+    _isSmsSendCodeSkiped() {
         return env.SKIP_SMS_VERIFICATION_CODE_SEND;
+    }
+
+    _isEmailSendCodeSkiped() {
+        return env.SKIP_EMAIL_VERIFICATION_CODE_SEND;
     }
 }
 

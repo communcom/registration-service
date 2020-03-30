@@ -55,6 +55,28 @@ onboardingSharedLink:                         // Шаг процесса онб�
 }
 ```
 
+```json
+{
+    "id": 1,
+    "method": "getState",
+    "jsonrpc": "2.0",
+    "params": {
+        "identity": "<id из oauth-service>"
+    }
+}
+```
+
+```json
+{
+    "id": 1,
+    "method": "getState",
+    "jsonrpc": "2.0",
+    "params": {
+        "email": "alice@commun.com"
+    }
+}
+```
+
 <= Ответ
 
 ```json
@@ -62,7 +84,7 @@ onboardingSharedLink:                         // Шаг процесса онб�
     "jsonrpc": "2.0",
     "id": 1,
     "result": {
-        "currentState": "(firstStep|verify|setUsername|toBlockChain|registered)"
+        "currentState": "(firstStep|verify|firstStepEmail|verifyEmail|createIdentity|setUsername|toBlockChain|registered)"
     }
 }
 ```
@@ -78,7 +100,8 @@ onboardingSharedLink:                         // Шаг процесса онб�
     "jsonrpc": "2.0",
     "params": {
         "phone": "+380000000000",
-        "captcha": "captcha code"
+        "captcha": "captcha code",
+        "captchaType": "(web|android|ios)"
     }
 }
 ```
@@ -177,6 +200,117 @@ onboardingSharedLink:                         // Шаг процесса онб�
 | 1107  | Try later                  | Try later                |
 | 1108  | Too many retries           | Too many retries         |
 
+### firstStepEmail
+
+=> Запрос
+
+```json
+{
+    "id": 1,
+    "method": "firstStepEmail",
+    "jsonrpc": "2.0",
+    "params": {
+        "email": "alice@commun.com",
+        "captcha": "captcha code",
+        "captchaType": "(web|android|ios)"
+    }
+}
+```
+
+<= Ответ
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "nextEmailRetry": "2019-10-15T07:57:43.879Z",
+        "currentState": "verifyEmail"
+    }
+}
+```
+
+Ошибки
+
+| Code  | Message                    | Описание                 |
+| ----- | -------------------------- | ------------------------ |
+| 1101  | Account already registered | Аккаунт зарегестрирован  |
+| 1102  | Invalid step taken         | Неверный шаг регистрации |
+| 1103  | Recaptcha check failed     | Ошибка проверки каптчи   |
+
+### verifyEmail
+
+=> Запрос
+
+```json
+{
+    "id": 1,
+    "method": "verifyEmail",
+    "jsonrpc": "2.0",
+    "params": {
+        "email": "alice@commun.com",
+        "code": "<code>"
+    }
+}
+```
+
+<= Ответ
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "currentState": "setUsername"
+    }
+}
+```
+
+Ошибки
+
+| Code  | Message                    | Описание                 |
+| ----- | -------------------------- | ------------------------ |
+| 1101  | Account already registered | Аккаунт зарегестрирован  |
+| 1102  | Invalid step taken         | Неверный шаг регистрации |
+| 1104  | Wrong activation code      | Неверный код верификации |
+
+### resendEmailCode
+
+=> Запрос
+
+```json
+{
+    "id": 1,
+    "method": "resendEmailCode",
+    "jsonrpc": "2.0",
+    "params": {
+        "email": "alice@commun.com"
+    }
+}
+```
+
+<= Ответ
+
+```json
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "nextEmailRetry": "2019-10-15T07:57:43.879Z",
+        "currentState": "verifyEmail"
+    }
+}
+```
+
+Ошибки
+
+| Code  | Message                    | Описание                 |
+| ----- | -------------------------- | ------------------------ |
+| 1101  | Account already registered | Аккаунт зарегестрирован  |
+| 1102  | Invalid step taken         | Неверный шаг регистрации |
+| 1107  | Try later                  | Try later                |
+| 1108  | Too many retries           | Too many retries         |
+
 ### setUsername
 
 => Запрос
@@ -188,6 +322,30 @@ onboardingSharedLink:                         // Шаг процесса онб�
     "jsonrpc": "2.0",
     "params": {
         "phone": "+380000000000",
+        "username": "some-user-name"
+    }
+}
+```
+
+```json
+{
+    "id": 1,
+    "method": "setUsername",
+    "jsonrpc": "2.0",
+    "params": {
+        "identity": "<id из oauth-service>",
+        "username": "some-user-name"
+    }
+}
+```
+
+```json
+{
+    "id": 1,
+    "method": "setUsername",
+    "jsonrpc": "2.0",
+    "params": {
+        "email": "alice@commun.com",
         "username": "some-user-name"
     }
 }
@@ -225,6 +383,36 @@ onboardingSharedLink:                         // Шаг процесса онб�
     "jsonrpc": "2.0",
     "params": {
         "phone": "+380000000000",
+        "username": "some-user-name",
+        "userId": "<userId c шага setUsername>",
+        "publicOwnerKey": "GLS8Bb....",
+        "publicActiveKey": "GLS35B...."
+    }
+}
+```
+
+```json
+{
+    "id": 1,
+    "method": "toBlockChain",
+    "jsonrpc": "2.0",
+    "params": {
+        "identity": "<id из oauth-service>",
+        "username": "some-user-name",
+        "userId": "<userId c шага setUsername>",
+        "publicOwnerKey": "GLS8Bb....",
+        "publicActiveKey": "GLS35B...."
+    }
+}
+```
+
+```json
+{
+    "id": 1,
+    "method": "toBlockChain",
+    "jsonrpc": "2.0",
+    "params": {
+        "email": "alice@commun.com",
         "username": "some-user-name",
         "userId": "<userId c шага setUsername>",
         "publicOwnerKey": "GLS8Bb....",
