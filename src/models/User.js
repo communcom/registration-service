@@ -47,6 +47,26 @@ module.exports =
                 type: Number,
                 default: 0,
             },
+            email: {
+                type: String,
+            },
+            emailHash: {
+                type: String,
+            },
+            isEmailVerified: {
+                type: Boolean,
+                default: false,
+            },
+            emailCode: {
+                type: String,
+            },
+            emailCodeDate: {
+                type: Date,
+            },
+            emailCodeResendCount: {
+                type: Number,
+                default: 0,
+            },
             referralId: String,
             referrals: {
                 type: [String],
