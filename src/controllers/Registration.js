@@ -474,11 +474,18 @@ class Registration extends Basic {
             }
         }
 
-        await User.create({
+        const userObj = {
             identity,
             provider,
             state: States.SET_USERNAME,
-        });
+        };
+        const isTestingSystem = env.GLS_IS_TEST_IDENTITY;
+
+        if (isTestingSystem) {
+            userObj.isTestingSystem = isTestingSystem;
+        }
+
+        await User.create(userObj);
 
         return {
             success: true,
