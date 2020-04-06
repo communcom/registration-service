@@ -638,7 +638,7 @@ class Registration extends Basic {
 
     async _sendEmail(email, isTestingSystem) {
         if (this._isEmailSendCodeSkiped()) {
-            return { code: '0123456789' }; // test verification code
+            return { code: '123456' }; // test verification code
         }
 
         const code = EmailUtils.makeEmailCode(env.GLS_EMAIL_CODE_LENGTH);
