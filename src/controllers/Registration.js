@@ -750,6 +750,23 @@ class Registration extends Basic {
 
         if (user) {
             await User.updateOne({ userId: referralId }, { $addToSet: { referrals: user.userId } });
+
+            if (user.referralId && env.GLS_REFERRAL_BONUS) {
+                const referralId = user.referralId;
+
+                this.callService('payment', 'sendPayment', {
+                    apiKey: env.GLS_PAYMENT_API_KEY,
+                    userId: referralId,
+                    quantity: env.GLS_REFERRAL_BONUS,
+                    memo: `referral registration bonus from: ${user.username} (${user.userId})`,
+                }).catch(err => {
+                    Logger.error(
+                        `Error while sending referral bonus to ${referralId} ` +
+                            `per registration ${user.userId}:`,
+                        err
+                    );
+                });
+            }
         }
     }
 
