@@ -744,7 +744,7 @@ class Registration extends Basic {
         }
 
         const user = await User.findOneAndUpdate(
-            { $and: [resolveUserQuery, { referralId: { $exists: false }, isRegistered: false }] },
+            { $and: [resolveUserQuery, { referralId: { $exists: false } }] },
             { $set: { referralId } }
         );
 
