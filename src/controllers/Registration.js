@@ -751,9 +751,7 @@ class Registration extends Basic {
         if (user) {
             await User.updateOne({ userId: referralId }, { $addToSet: { referrals: user.userId } });
 
-            if (user.referralId && env.GLS_REFERRAL_BONUS) {
-                const referralId = user.referralId;
-
+            if (user && env.GLS_REFERRAL_BONUS) {
                 this.callService('payment', 'sendPayment', {
                     apiKey: env.GLS_PAYMENT_API_KEY,
                     userId: referralId,
