@@ -4,6 +4,7 @@ module.exports = {
     GLS_IS_REG_ENABLED_ON_START: env.GLS_IS_REG_ENABLED_ON_START || true,
     SKIP_SMS_VERIFICATION_CODE_SEND: env.SKIP_SMS_VERIFICATION_CODE_SEND || false,
     SKIP_EMAIL_VERIFICATION_CODE_SEND: env.SKIP_EMAIL_VERIFICATION_CODE_SEND || false,
+    GLS_IS_TEST_IDENTITY: env.GLS_IS_TEST_IDENTITY || false,
 
     GLS_FACADE_CONNECT: env.GLS_FACADE_CONNECT,
     GLS_SMS_CONNECT: env.GLS_SMS_CONNECT,
@@ -68,6 +69,14 @@ if (module.exports.SKIP_EMAIL_VERIFICATION_CODE_SEND === 'true') {
 
 if (module.exports.SKIP_EMAIL_VERIFICATION_CODE_SEND === 'false') {
     module.exports.SKIP_EMAIL_VERIFICATION_CODE_SEND = false;
+}
+
+if (module.exports.GLS_IS_TEST_IDENTITY === 'true') {
+    module.exports.GLS_IS_TEST_IDENTITY = true;
+}
+
+if (module.exports.GLS_IS_TEST_IDENTITY === 'false') {
+    module.exports.GLS_IS_TEST_IDENTITY = false;
 }
 
 if (module.exports.GLS_CAPTCHA_ON === 'false') {

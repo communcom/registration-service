@@ -474,11 +474,18 @@ class Registration extends Basic {
             }
         }
 
-        await User.create({
+        const userObj = {
             identity,
             provider,
             state: States.SET_USERNAME,
-        });
+        };
+        const isTestingSystem = env.GLS_IS_TEST_IDENTITY;
+
+        if (isTestingSystem) {
+            userObj.isTestingSystem = isTestingSystem;
+        }
+
+        await User.create(userObj);
 
         return {
             success: true,
@@ -631,7 +638,7 @@ class Registration extends Basic {
 
     async _sendEmail(email, isTestingSystem) {
         if (this._isEmailSendCodeSkiped()) {
-            return { code: '0123456789' }; // test verification code
+            return { code: '123456' }; // test verification code
         }
 
         const code = EmailUtils.makeEmailCode(env.GLS_EMAIL_CODE_LENGTH);
