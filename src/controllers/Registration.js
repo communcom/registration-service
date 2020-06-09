@@ -231,7 +231,10 @@ class Registration extends Basic {
         }
 
         this.throwIfRegistred(userModel.isRegistered);
-        this.throwIfInvalidState(userModel.state, States.SET_USERNAME);
+
+        if (userModel.state !== States.TO_BLOCK_CHAIN) {
+            this.throwIfInvalidState(userModel.state, States.SET_USERNAME);
+        }
 
         await this._checkUsername(username);
 
@@ -727,8 +730,8 @@ class Registration extends Basic {
         return true;
     }
 
-    async appendReferralParent({ referralId, phone, identity, userId }) {
-        if (!(phone || identity || userId)) {
+    async appendReferralParent({ referralId, phone, identity, email, userId }) {
+        if (!(phone || identity || userId || email)) {
             throw {
                 code: 1005,
                 message: 'One of phone, identity or userId params are required',
@@ -743,6 +746,11 @@ class Registration extends Basic {
             resolveUserQuery = { userId };
         } else if (identity) {
             resolveUserQuery = { identity };
+        } else if (email) {
+            email = EmailUtils.normalizeEmail(email);
+            const emailHash = EmailUtils.saltedHash(email);
+
+            resolveUserQuery = { $or: [{ email }, { emailHash }] };
         } else {
             phone = PhoneUtils.normalizePhone(phone);
             const phoneHash = PhoneUtils.saltedHash(phone);
