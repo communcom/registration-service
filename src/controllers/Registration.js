@@ -231,7 +231,10 @@ class Registration extends Basic {
         }
 
         this.throwIfRegistred(userModel.isRegistered);
-        this.throwIfInvalidState(userModel.state, States.SET_USERNAME);
+
+        if (userModel.state !== States.TO_BLOCK_CHAIN) {
+            this.throwIfInvalidState(userModel.state, States.SET_USERNAME);
+        }
 
         await this._checkUsername(username);
 
@@ -474,11 +477,18 @@ class Registration extends Basic {
             }
         }
 
-        await User.create({
+        const userObj = {
             identity,
             provider,
             state: States.SET_USERNAME,
-        });
+        };
+        const isTestingSystem = env.GLS_IS_TEST_IDENTITY;
+
+        if (isTestingSystem) {
+            userObj.isTestingSystem = isTestingSystem;
+        }
+
+        await User.create(userObj);
 
         return {
             success: true,
@@ -631,7 +641,7 @@ class Registration extends Basic {
 
     async _sendEmail(email, isTestingSystem) {
         if (this._isEmailSendCodeSkiped()) {
-            return { code: '0123456789' }; // test verification code
+            return { code: '123456' }; // test verification code
         }
 
         const code = EmailUtils.makeEmailCode(env.GLS_EMAIL_CODE_LENGTH);
@@ -720,8 +730,8 @@ class Registration extends Basic {
         return true;
     }
 
-    async appendReferralParent({ referralId, phone, identity, userId }) {
-        if (!(phone || identity || userId)) {
+    async appendReferralParent({ referralId, phone, identity, email, userId }) {
+        if (!(phone || identity || userId || email)) {
             throw {
                 code: 1005,
                 message: 'One of phone, identity or userId params are required',
@@ -736,6 +746,11 @@ class Registration extends Basic {
             resolveUserQuery = { userId };
         } else if (identity) {
             resolveUserQuery = { identity };
+        } else if (email) {
+            email = EmailUtils.normalizeEmail(email);
+            const emailHash = EmailUtils.saltedHash(email);
+
+            resolveUserQuery = { $or: [{ email }, { emailHash }] };
         } else {
             phone = PhoneUtils.normalizePhone(phone);
             const phoneHash = PhoneUtils.saltedHash(phone);
@@ -744,12 +759,27 @@ class Registration extends Basic {
         }
 
         const user = await User.findOneAndUpdate(
-            { $and: [resolveUserQuery, { referralId: { $exists: false }, isRegistered: false }] },
+            { $and: [resolveUserQuery, { referralId: { $exists: false } }] },
             { $set: { referralId } }
         );
 
         if (user) {
             await User.updateOne({ userId: referralId }, { $addToSet: { referrals: user.userId } });
+
+            if (user && env.GLS_REFERRAL_BONUS) {
+                this.callService('payment', 'sendPayment', {
+                    apiKey: env.GLS_PAYMENT_API_KEY,
+                    userId: referralId,
+                    quantity: env.GLS_REFERRAL_BONUS,
+                    memo: `referral registration bonus from: ${user.username} (${user.userId})`,
+                }).catch(err => {
+                    Logger.error(
+                        `Error while sending referral bonus to ${referralId} ` +
+                            `per registration ${user.userId}:`,
+                        err
+                    );
+                });
+            }
         }
     }
 
