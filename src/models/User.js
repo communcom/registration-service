@@ -94,6 +94,9 @@ module.exports =
             identity: {
                 type: String,
             },
+            finalStepPlatform: {
+                type: String,
+            },
 
             // Tests
             isTestingSystem: {
