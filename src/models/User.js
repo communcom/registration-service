@@ -94,10 +94,11 @@ module.exports =
             identity: {
                 type: String,
             },
-            finalStepPlatform: {
-                type: String,
+            finalStepDeviceInfo: {
+                platform: String,
+                clientType: String,
+                deviceType: String,
             },
-
             // Tests
             isTestingSystem: {
                 type: Boolean,
