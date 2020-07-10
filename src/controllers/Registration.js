@@ -262,7 +262,7 @@ class Registration extends Basic {
     async toBlockChain(
         { phone, identity, email, userId, username, publicOwnerKey, publicActiveKey },
         {},
-        { platform }
+        { platform, clientType, deviceType }
     ) {
         const userModel = await this._getUserModel({ phone, identity, email });
 
@@ -322,7 +322,7 @@ class Registration extends Basic {
                 isRegistered: true,
                 userId,
                 state: States.REGISTERED,
-                finalStepPlatform: platform,
+                finalStepDeviceInfo: { platform, clientType, deviceType },
             };
 
             if (phone) {
