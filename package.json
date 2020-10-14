@@ -8,8 +8,8 @@
     "test": "cross-env NODE_ENV=test mocha",
     "test:watch": "npm run test -- --watch"
   },
-  "author": "commun.com",
-  "license": "GPL-3.0",
+  "author": "Commun.com",
+  "license": "MIT",
   "dependencies": {
     "cyberway-core-service": "^3.55.1",
     "cyberwayjs": "^20.0.0-beta7",
